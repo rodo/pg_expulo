@@ -18,3 +18,11 @@ INSERT INTO skipper (name) VALUES ('Eric Tabarly');
 INSERT INTO results (year) VALUES (1960);
 
 INSERT INTO cheater VALUES (default);
+
+-- we sync only rows with profile=public
+--
+INSERT INTO race (name, profile) VALUES ('Vendée Globe', 'public');
+INSERT INTO race (name, profile) VALUES ('Globe Challenge', 'public');
+INSERT INTO race (name, profile) VALUES ('RORC Caribbean 600', 'public');
+INSERT INTO race (name, profile) VALUES ('Plastimo Lorient Mini - PLM 6.50', 'public');
+INSERT INTO race (name, profile) VALUES ('Les potes et moi', 'private');

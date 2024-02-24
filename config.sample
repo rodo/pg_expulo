@@ -20,6 +20,7 @@
         },
         {"name": "race",
          "schema": "public",
+         "filter": "profile='public'",
          "columns": [
              {
                  "name": "name",
