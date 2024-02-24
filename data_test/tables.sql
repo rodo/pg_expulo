@@ -2,6 +2,7 @@ DROP TABLE IF EXISTS race;
 DROP TABLE IF EXISTS results;
 DROP TABLE IF EXISTS boat;
 DROP TABLE IF EXISTS skipper;
+DROP TABLE IF EXISTS cheater;
 
 CREATE TABLE boat (
   id serial primary key,
@@ -35,3 +36,7 @@ CREATE TABLE results (
   id serial primary key,
   year int
 );
+
+/* This table is not present in configuration so stay empty on destination
+ */
+CREATE TABLE cheater (name text default 'fool');
