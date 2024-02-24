@@ -60,6 +60,9 @@ jobs:
     - name: Change file permissions on expulo
       run: chmod +x expulo
 
+    - name: Prepare config file
+      run: mv config.sample config.json
+
     - name: create db source
       run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE source'
 
