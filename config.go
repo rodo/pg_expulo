@@ -22,6 +22,7 @@ type Columns struct {
 type Table struct {
 	Name   string `json:"name"`
 	Columns []Column `json:"columns"`
+	Filter string `json:"filter"`
 	Schema string `json:"schema"`
 	CleanMethod string `json:"clean"`
 }

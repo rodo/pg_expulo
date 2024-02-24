@@ -23,10 +23,14 @@ CREATE TABLE skipper (
   price float default 4.5
 );
 
+/* We sync only race with profile=public
+ *
+ */
 CREATE TABLE race (
   id serial primary key,
   name text,
-  year int
+  year int,
+  profile text default 'private'
 );
 
 /* This table is never empty on destination

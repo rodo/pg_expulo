@@ -85,7 +85,12 @@ func main() {
 
 
 		batch_size := 4
-		src_query := "SELECT * FROM " + table_name + " WHERE id >= $1 AND id < $2"
+		src_query := fmt.Sprintf("SELECT * FROM %s WHERE id >= $1 AND id < $2", table_name)
+
+		if len(t.Filter) > 0 {
+			src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
+		}
+		log.Debug(src_query)
 
 		keepRunning := true
 		run := 0
