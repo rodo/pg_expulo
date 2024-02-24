@@ -23,6 +23,7 @@ type Table struct {
 	Name   string `json:"name"`
 	Columns []Column `json:"columns"`
 	Schema string `json:"schema"`
+	CleanMethod string `json:"clean"`
 }
 
 type Column struct {
@@ -62,7 +63,6 @@ func read_config(fileName string) Config {
 	tlist := []string{}
 
 	for i := 0; i < len(tables.Tables); i++ {
-		log.Debug("uuu", i)
 		tlist = append(tlist, tables.Tables[i].Name)
 
 		for j := 0; j < len(tables.Tables[i].Columns); j++ {

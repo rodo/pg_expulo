@@ -54,16 +54,26 @@ func main() {
 	log.Debug("Read config done")
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
-	dst_truncate := true
+
 
 	// Loop over all tables found in config file
 	for _, t := range config.Tables {
 
 		table_name := t.Name
 
-		fmt.Println("doing table :", t.Name )
+		log.Info(fmt.Sprintf("Work on table : %s (%s)", t.Name, t.CleanMethod ))
 
-		if dst_truncate {
+		// Clean destination tables
+		switch t.CleanMethod {
+		case "append":
+			// we do nothing on this case
+		case "delete":
+			dst_query := "DELETE FROM " + table_name + ";"
+			_, err := db_dst.Exec(dst_query)
+			if err != nil {
+				log.Fatal(err)
+			}
+		default:
 			dst_query := "TRUNCATE " + table_name + ";"
 			_, err := db_dst.Exec(dst_query)
 			if err != nil {
