@@ -6,21 +6,20 @@ The extract part will fetch data with a set of `SELECT` statement execute on the
 
 The two connections strings are build from env variables, you need at leas these 10
 
-> export PGSRCHOST=localhost
-> export PGSRCPORT=5432
-> export PGSRCUSER=rodo
-> export PGSRCPASSWORD=*****
-> export PGSRCDATABASE=source
+    export PGSRCHOST=localhost
+    export PGSRCPORT=5432
+    export PGSRCUSER=rodo
+    export PGSRCPASSWORD=*****
+    export PGSRCDATABASE=source
+    export PGDSTHOST=localhost 
+    export PGDSTPORT=5432
+    export PGDSTUSER=rodo 
+    export PGDSTPASSWORD=****** 
+    export PGDSTDATABASE=destination
 
-> export PGDSTHOST=localhost
-> export PGDSTPORT=5432
-> export PGDSTUSER=rodo
-> export PGDSTPASSWORD=******
-> export PGDSTDATABASE=destination
+You can laucnh expulo without any parameter
 
-You canlaucnh expulso without any parameter
-
-> expluso
+    expluo
 
 ## Configuration
 
