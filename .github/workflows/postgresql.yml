@@ -65,8 +65,16 @@ jobs:
     - name: fill db source
       run: psql "postgres://postgres:postgres@localhost:5432/source" -f data_test/data.sql
 
-
     - name: run tests
-      run: expulo
+      run: ./expulo
       env:
         PGSRCHOST: localhost
+        PGSRCPORT: 5432
+        PGSRCUSER: postgres
+        PGSRCPASSWORD: postgres
+        PGSRCDATABASE: source
+        PGDSTHOST: localhost
+        PGDSTPORT: 5432
+        PGDSTUSER: postgres
+        PGDSTPASSWORD: postgres
+        PGDSTDATABASE: destination
