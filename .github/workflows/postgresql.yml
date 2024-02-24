@@ -21,6 +21,9 @@ jobs:
     - name: Build
       run: go build -v ./...
 
+    - name: Change file permissions
+      run: chmod +x expulo
+
     - name: Archive Executable
       uses: actions/upload-artifact@v4
       with:
