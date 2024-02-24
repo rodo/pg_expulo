@@ -21,9 +21,6 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-    - name: Change file permissions
-      run: chmod +x expulo
-
     - name: Archive Executable
       uses: actions/upload-artifact@v4
       with:
@@ -59,6 +56,9 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: expulo
+
+    - name: Change file permissions on expulo
+      run: chmod +x expulo
 
     - name: create db source
       run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE source'
