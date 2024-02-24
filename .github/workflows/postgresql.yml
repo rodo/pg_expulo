@@ -30,6 +30,7 @@ jobs:
   integration_tests:
     runs-on: ubuntu-latest
     needs: build
+
     services:
       postgres:
         image: postgres
@@ -48,10 +49,13 @@ jobs:
           - 5432:5432
 
     steps:
-      - name: Download Executable
-        uses: actions/download-artifact@v4
-        with:
-          name: expulo
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Download Executable
+      uses: actions/download-artifact@v4
+      with:
+        name: expulo
 
     - name: create db source
       run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE source'
