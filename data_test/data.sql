@@ -16,3 +16,5 @@ INSERT INTO skipper (name) VALUES ('Eric Tabarly');
 
 
 INSERT INTO results (year) VALUES (1960);
+
+INSERT INTO cheater VALUES (default);

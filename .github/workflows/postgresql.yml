@@ -120,6 +120,6 @@ jobs:
         PGDSTDATABASE: destination
 
     - name: check results in destination
-      run: pg_prove --host localhost --dbname destination --username postgres data_test/*_test.sql
+      run: pg_prove -v --host localhost --dbname destination --username postgres data_test/*_test.sql
       env:
         PGPASSWORD: postgres
