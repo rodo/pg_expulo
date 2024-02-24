@@ -41,20 +41,19 @@ func main() {
 	conxDestination, dsn_dst := get_dsn(dst_host, dst_port, dst_user, dst_pass, dst_db, version)
 
 	// Connect to the database source
-	log.Info("Connect on source")
+	log.Debug("Connect on source")
 	db_src := connectDb(conxSource)
-	log.Info("Use as source ", dsn_src)
+	log.Info(fmt.Sprintf("Use %s as source", dsn_src))
 
 	// Connect to the database destination
-	log.Info("Connect on destination")
+	log.Debug("Connect on destination")
 	db_dst := connectDb(conxDestination)
-	log.Info("Use as destination ", dsn_dst)
+	log.Info(fmt.Sprintf("Use %s as destination", dsn_dst))
 
 	// Read the configuration
 	config := read_config("config.json")
 	log.Debug("Read config done")
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
-
 
 
 	// Loop over all tables found in configuration file
@@ -67,14 +66,16 @@ func main() {
 		// Clean destination tables
 		switch t.CleanMethod {
 		case "append":
-			// we do nothing on this case
+			log.Debug("Do nothing on destination purge according to configuration")
 		case "delete":
+			log.Debug("DELETE data from table according to configuration")
 			dst_query := "DELETE FROM " + table_name + ";"
 			_, err := db_dst.Exec(dst_query)
 			if err != nil {
 				log.Fatal(err)
 			}
 		default:
+			log.Debug("TRUNCATE TABLE according to default")
 			dst_query := "TRUNCATE " + table_name + ";"
 			_, err := db_dst.Exec(dst_query)
 			if err != nil {
@@ -107,7 +108,6 @@ func main() {
 			for rows.Next() {
 				var colnames []string
 				count = count + 1
-
 				cols := make([]interface{}, len(columns))
 
 				columnPointers := make([]interface{}, len(cols))
@@ -184,17 +184,16 @@ func main() {
 				col_names := strings.Join(colnames, ",")
 
 				dst_query := "INSERT INTO " + table_name + " (" + col_names + ") VALUES ("+strings.Join(colparam,",") + ")"
-
+				log.Debug(dst_query)
 				_, err := db_dst.Exec(dst_query, colvalue...)
 				if err != nil {
-					fmt.Println("Error during INSERT on :", table_name, err)
-					log.Debug(1, dst_query)
+					log.Error("Error during INSERT on :", table_name, err)
 					return
 				}
 
 			}
 			if count == 0 { keepRunning = false }
-			log.Info(1, fmt.Sprintf("%d",count))
+			log.Info(fmt.Sprintf("%d",count))
 		}
 
 

@@ -78,6 +78,33 @@ jobs:
     - name: fill db source
       run: psql "postgres://postgres:postgres@localhost:5432/source" -f data_test/data.sql
 
+    - name: install pg_prove
+      run: sudo cpan TAP::Parser::SourceHandler::pgTAP
+      env:
+        SHELL: /bin/bash
+
+    - name: install postgres-server-dev-14
+      run: sudo apt-get install -y --no-install-recommends postgresql-server-dev-14
+
+    - name: Checkout pgtap
+      uses: actions/checkout@v3
+      with:
+        repository: theory/pgtap
+        path: pgtap
+        ref: v1.3.2
+
+    - name: install pgtap on source
+      working-directory: pgtap
+      run: make && psql --host localhost --username postgres --dbname source --file sql/pgtap.sql
+      env:
+        PGPASSWORD: postgres
+
+    - name: install pgtap on destination
+      working-directory: pgtap
+      run: psql --host localhost --username postgres --dbname destination --file sql/pgtap.sql
+      env:
+        PGPASSWORD: postgres
+
     - name: run binary
       run: ./expulo
       env:
@@ -91,3 +118,8 @@ jobs:
         PGDSTUSER: postgres
         PGDSTPASSWORD: postgres
         PGDSTDATABASE: destination
+
+    - name: check results in destination
+      run: pg_prove --host localhost --dbname destination --username postgres data_test/*_test.sql
+      env:
+        PGPASSWORD: postgres
