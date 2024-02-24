@@ -23,6 +23,7 @@ type Table struct {
 	Name   string `json:"name"`
 	Columns []Column `json:"columns"`
 	Schema string `json:"schema"`
+	CleanMethod string `json:"clean"`
 }
 
 type Column struct {
@@ -59,20 +60,19 @@ func read_config(fileName string) Config {
 		panic(err)
 	}
 
-	tlist := []string{}
+	// tlist := []string{}
 
-	for i := 0; i < len(tables.Tables); i++ {
-		log.Debug("uuu", i)
-		tlist = append(tlist, tables.Tables[i].Name)
+	// for i := 0; i < len(tables.Tables); i++ {
+	//	tlist = append(tlist, tables.Tables[i].Name)
 
-		for j := 0; j < len(tables.Tables[i].Columns); j++ {
+	//	for j := 0; j < len(tables.Tables[i].Columns); j++ {
 
-			fullname := fmt.Sprintf("%s.%s.%s", tables.Tables[i].Schema,
-				tables.Tables[i].Name,
-				tables.Tables[i].Columns[j].Name)
-			log.Debug(fullname)
-		}
-	}
+	//		fullname := fmt.Sprintf("%s.%s.%s", tables.Tables[i].Schema,
+	//			tables.Tables[i].Name,
+	//			tables.Tables[i].Columns[j].Name)
+	//		//log.Debug(fullname)
+	//	}
+	// }
 
 	return tables
 }

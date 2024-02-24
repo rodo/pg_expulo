@@ -37,33 +37,44 @@ func main() {
 	dst_db   := os.Getenv("PGDSTDATABASE")
 
 	// Construct connection string
-	connectionSource := get_dsn(src_host, src_port, src_user, src_pass, src_db, version)
-	connectionDestination := get_dsn(dst_host, dst_port, dst_user, dst_pass, dst_db, version)
+	conxSource, dsn_src := get_dsn(src_host, src_port, src_user, src_pass, src_db, version)
+	conxDestination, dsn_dst := get_dsn(dst_host, dst_port, dst_user, dst_pass, dst_db, version)
 
 	// Connect to the database source
-	log.Info("Connect on source : ", connectionSource)
-	db_src := connectDb(connectionSource)
-
+	log.Info("Connect on source")
+	db_src := connectDb(conxSource)
+	log.Info("Use as source ", dsn_src)
 
 	// Connect to the database destination
-	log.Info("Connect on destination : ", connectionDestination)
-	db_dst := connectDb(connectionDestination)
+	log.Info("Connect on destination")
+	db_dst := connectDb(conxDestination)
+	log.Info("Use as destination ", dsn_dst)
 
-	// Configuration
+	// Read the configuration
 	config := read_config("config.json")
 	log.Debug("Read config done")
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
-	dst_truncate := true
 
-	// Loop over all tables found in config file
+
+	// Loop over all tables found in configuration file
 	for _, t := range config.Tables {
 
 		table_name := t.Name
 
-		fmt.Println("doing table :", t.Name )
+		log.Info(fmt.Sprintf("Work on table : %s (%s)", t.Name, t.CleanMethod ))
 
-		if dst_truncate {
+		// Clean destination tables
+		switch t.CleanMethod {
+		case "append":
+			// we do nothing on this case
+		case "delete":
+			dst_query := "DELETE FROM " + table_name + ";"
+			_, err := db_dst.Exec(dst_query)
+			if err != nil {
+				log.Fatal(err)
+			}
+		default:
 			dst_query := "TRUNCATE " + table_name + ";"
 			_, err := db_dst.Exec(dst_query)
 			if err != nil {
