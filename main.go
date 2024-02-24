@@ -61,7 +61,7 @@ func main() {
 
 		table_name := t.Name
 
-		log.Info(fmt.Sprintf("Work on table : %s (%s)", t.Name, t.CleanMethod ))
+		log.Info(fmt.Sprintf("Work on table : %s (%s, %s)", t.Name, t.CleanMethod, t.Filter ))
 
 		// Clean destination tables
 		switch t.CleanMethod {
@@ -87,6 +87,7 @@ func main() {
 		batch_size := 4
 		src_query := fmt.Sprintf("SELECT * FROM %s WHERE id >= $1 AND id < $2", table_name)
 
+		// Filter the data on source to fetch a subset of rows in a table
 		if len(t.Filter) > 0 {
 			src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
 		}
