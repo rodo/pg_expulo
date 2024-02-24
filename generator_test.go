@@ -6,7 +6,7 @@ import (
 )
 
 
-func TestrandomFloat32(t *testing.T) {
+func TestRandomFloat32(t *testing.T) {
 
 	value := randomFloat32()
 	result := fmt.Sprintf("%T", value)

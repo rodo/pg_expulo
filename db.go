@@ -7,12 +7,16 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func get_dsn(host string, port string, user string, pass string, db string, version string) string {
+func get_dsn(host string, port string, user string, pass string, db string, version string) (string, string) {
 
 	appname := "expulo_" + version
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s application_name=%s sslmode=disable", host, port, user, pass, db, appname)
-	return dsn
+	// The connection string is used by Open() method
+	cnx := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s application_name=%s sslmode=disable", host, port, user, pass, db, appname)
+
+	// The dsn is used in log, as it's more readable
+	dsn := fmt.Sprintf("%s:%s@%s:%s/%s", user, pass, host, port, db)
+	return cnx, dsn
 }
 
 func connectDb(connectionString string) *sql.DB {
