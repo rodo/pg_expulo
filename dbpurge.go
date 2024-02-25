@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
-	_ "embed"
-	"strings"
 	"database/sql"
+	_ "embed"
+	"fmt"
+	"strings"
+
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-
 )
 
 //go:embed sql/primary_key.sql
@@ -17,17 +17,15 @@ var qry_primary_key string
 //go:embed sql/linked_tables.sql
 var qry_linked_tables string
 
-
 // Purge all the tables in the database destination
 
-
 func getTableByName(config Config, name string) (Table, bool) {
-    for _, table := range config.Tables {
-	if table.Name == name {
-	    return table, true
+	for _, table := range config.Tables {
+		if table.Name == name {
+			return table, true
+		}
 	}
-    }
-    return Table{}, false
+	return Table{}, false
 }
 
 func getTableByFullName(config Config, name string) (Table, bool) {
@@ -39,8 +37,6 @@ func getTableByFullName(config Config, name string) (Table, bool) {
 	return Table{}, false
 }
 
-
-
 func purge_destination(config Config, db_dst *sql.DB) {
 
 	force_purge := true
@@ -51,9 +47,8 @@ func purge_destination(config Config, db_dst *sql.DB) {
 		table_list = append(table_list, fullTableName(t.Schema, t.Name))
 	}
 
-
 	for _, tname := range OrderTableList(table_list, db_dst) {
-		//table_list = append(table_list, fmt.Sprintf("%s.%s", t.Schema, t.Name))
+		// table_list = append(table_list, fmt.Sprintf("%s.%s", t.Schema, t.Name))
 		t, found := getTableByFullName(config, tname)
 		if found {
 			OrderedTables = append(OrderedTables, t)
@@ -61,15 +56,14 @@ func purge_destination(config Config, db_dst *sql.DB) {
 	}
 
 	for _, t := range OrderedTables {
-		log.Debug(fmt.Sprintf("Will clean table : %s.%s with %s", t.Schema, t.Name, t.CleanMethod ))
+		log.Debug(fmt.Sprintf("Will clean table : %s.%s with %s", t.Schema, t.Name, t.CleanMethod))
 	}
-
 
 	// Loop over all tables found in configuration file
 	for _, t := range OrderedTables {
 		table_name := t.Name
 
-		log.Info(fmt.Sprintf("Clean table : %s (%s, %s)", t.Name, t.CleanMethod, t.Filter ))
+		log.Info(fmt.Sprintf("Clean table : %s (%s, %s)", t.Name, t.CleanMethod, t.Filter))
 
 		// Clean destination tables
 		switch t.CleanMethod {
@@ -92,10 +86,9 @@ func purge_destination(config Config, db_dst *sql.DB) {
 	}
 }
 
-
 func delete_data(t Table, force_purge bool, db_dst *sql.DB) error {
 	log.Debug(fmt.Sprintf("DELETE data from %s according to configuration", t.Name))
-	dst_query := fmt.Sprintf("DELETE FROM %s.%s",t.Schema, t.Name)
+	dst_query := fmt.Sprintf("DELETE FROM %s.%s", t.Schema, t.Name)
 	_, err := db_dst.Exec(dst_query)
 	if err != nil {
 		if force_purge {
