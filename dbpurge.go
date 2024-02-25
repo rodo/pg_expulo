@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	_ "embed"
+	"strings"
 	"database/sql"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -29,19 +30,43 @@ func getTableByName(config Config, name string) (Table, bool) {
     return Table{}, false
 }
 
+func getTableByFullName(config Config, name string) (Table, bool) {
+	for _, table := range config.Tables {
+		if fullTableName(table.Schema, table.Name) == name {
+			return table, true
+		}
+	}
+	return Table{}, false
+}
+
 
 
 func purge_destination(config Config, db_dst *sql.DB) {
 
 	force_purge := true
 	var table_list []string
+	var OrderedTables []Table
 	// Order table depending on foreign keys
 	for _, t := range config.Tables {
-		table_list = append(table_list, fmt.Sprintf("%s.%s", t.Schema, t.Name))
+		table_list = append(table_list, fullTableName(t.Schema, t.Name))
 	}
 
+
+	for _, tname := range OrderTableList(table_list, db_dst) {
+		//table_list = append(table_list, fmt.Sprintf("%s.%s", t.Schema, t.Name))
+		t, found := getTableByFullName(config, tname)
+		if found {
+			OrderedTables = append(OrderedTables, t)
+		}
+	}
+
+	for _, t := range OrderedTables {
+		log.Debug(fmt.Sprintf("Will clean table : %s.%s with %s", t.Schema, t.Name, t.CleanMethod ))
+	}
+
+
 	// Loop over all tables found in configuration file
-	for _, t := range config.Tables {
+	for _, t := range OrderedTables {
 		table_name := t.Name
 
 		log.Info(fmt.Sprintf("Clean table : %s (%s, %s)", t.Name, t.CleanMethod, t.Filter ))
@@ -51,7 +76,7 @@ func purge_destination(config Config, db_dst *sql.DB) {
 		case "append":
 			log.Debug("Do nothing on destination purge according to configuration")
 		case "delete":
-			_ = delete_data(t, force_purge, db_dst, table_list)
+			_ = delete_data(t, force_purge, db_dst)
 		default:
 			log.Debug("TRUNCATE TABLE according to default")
 			dst_query := "TRUNCATE " + table_name + ";"
@@ -92,12 +117,17 @@ func delete_data(t Table, force_purge bool, db_dst *sql.DB) error {
 	return err
 }
 
-func OrderTableList(table_list []string, db_dst *sql.DB) string {
+// Order the table list on number of foreign keys poiting to them
+// This will ensure to purge in first table with no foriegn keys that
+// pointing to them
+// The order is not perfect as it is based on numer of foreign keys
+// it's a first step
+func OrderTableList(table_list []string, db_dst *sql.DB) []string {
 
 	var pk_name string
+	var nb_fk int
 	var ordered_table_list []string
-	tables := strings.Join(table_list, ",")
-
+	tables := "{" + strings.Join(table_list, ",") + "}"
 
 	// Query data from tableA
 	rows, erri := db_dst.Query(qry_linked_tables, tables)
@@ -106,7 +136,7 @@ func OrderTableList(table_list []string, db_dst *sql.DB) string {
 	}
 	// Iterate through the rows from tableA and insert into tableB
 	for rows.Next() {
-		if erri := rows.Scan(&pk_name); erri != nil {
+		if erri := rows.Scan(&pk_name, &nb_fk); erri != nil {
 			log.Error("Error scanning row: ", erri)
 
 		}

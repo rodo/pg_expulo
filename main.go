@@ -10,20 +10,29 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-
-
 func fullname(schemaname string, datname string, attname string) string {
 	return fmt.Sprintf("%s.%s.%s", schemaname, datname, attname)
+}
+
+func fullTableName(schemaname string, datname string) string {
+	return fmt.Sprintf("%s.%s", schemaname, datname)
 }
 
 
 func init() {
 	log.SetLevel(log.DebugLevel)
 	//	log.SetLevel(log.InfoLevel)
+
 }
 
 func main() {
-	version := "0.0.1"
+	version := "0.0.2"
+	// Command line flag
+	var purgeOnly bool
+	flag.BoolVar(&purgeOnly, "purge", false, "Only purge destination tables and exit, no data will be inserted")
+
+	flag.Parse()
+
 	// Read connection information from env variables
 	src_host := os.Getenv("PGSRCHOST")
 	src_port := os.Getenv("PGSRCPORT")
@@ -56,15 +65,9 @@ func main() {
 	log.Debug("Read config done")
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
-	// Command line flag
-	var purgeOnly bool
-	flag.BoolVar(&purgeOnly, "purge", false, "purge destination and exit")
-
-	flag.Parse()
-
 	// Delete data on destination tables
 	purge_destination(config, db_dst)
-	os.Exit(0)
+
 
 	// if command line parameter set do purge and exit
 	if purgeOnly == true {

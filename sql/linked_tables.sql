@@ -1,3 +1,4 @@
+-- qry linked_tables
 WITH tbl AS (
     SELECT
         0::bigint AS nb_fk,
@@ -26,12 +27,12 @@ cte AS (
 
 SELECT DISTINCT
     tablename,
-    nb_fk
+    nb_fk::int
 FROM cte
 UNION ALL
 SELECT DISTINCT
     tablename,
-    nb_fk
+    nb_fk::int
 FROM tbl
-WHERE tablename in ($1)
+WHERE tablename = ANY ($1::text[])
 ORDER BY nb_fk ASC
