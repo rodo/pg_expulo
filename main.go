@@ -28,11 +28,12 @@ type Columns struct {
 
 // Table represent a table with her property in configuration file
 type Table struct {
-	Name        string   `json:"name"`
-	Columns     []Column `json:"columns"`
-	Schema      string   `json:"schema"`
-	CleanMethod string   `json:"clean"`
-	Filter      string   `json:"filter"`
+	Name           string   `json:"name"`
+	Columns        []Column `json:"columns"`
+	Schema         string   `json:"schema"`
+	CleanMethod    string   `json:"clean"`
+	Filter         string   `json:"filter"`
+	DeletionFilter string   `json:"deletion_filter"`
 }
 
 type Column struct {

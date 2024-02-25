@@ -9,7 +9,7 @@ func TestGetCols(t *testing.T) {
 
 	column := Column{"id", "random", 0, 42, "UTC", "getRandomString()"}
 
-	conf := Table{"boat", []Column{column}, "public", "delete", "id < 42"}
+	conf := Table{"boat", []Column{column}, "public", "delete", "id < 42", ""}
 
 	col, _ := getCols(conf, "id")
 
@@ -24,7 +24,7 @@ func TestGetColsNotFound(t *testing.T) {
 
 	column := Column{"id", "random", 0, 42, "UTC", "getRandomString()"}
 
-	conf := Table{"boat", []Column{column}, "public", "delete", "id < 42"}
+	conf := Table{"boat", []Column{column}, "public", "delete", "id < 42", ""}
 
 	_, found := getCols(conf, "name")
 

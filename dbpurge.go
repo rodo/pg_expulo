@@ -88,8 +88,18 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 
 func deleteData(t Table, forcePurge bool, txDst *sql.Tx) error {
 	log.Debug(fmt.Sprintf("DELETE data from %s according to configuration", t.Name))
-	dst_query := fmt.Sprintf("DELETE FROM %s.%s", t.Schema, t.Name)
-	_, err := txDst.Exec(dst_query)
+
+	var dstQry string
+
+	if len(t.DeletionFilter) > 0 {
+		dstQry = fmt.Sprintf("DELETE FROM %s.%s WHERE %s", t.Schema, t.Name, t.DeletionFilter)
+	} else {
+		dstQry = fmt.Sprintf("DELETE FROM %s.%s", t.Schema, t.Name)
+	}
+
+	log.Debug(dstQry)
+
+	_, err := txDst.Exec(dstQry)
 	if err != nil {
 		if forcePurge {
 			log.Error(err)
