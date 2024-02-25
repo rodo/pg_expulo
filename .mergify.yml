@@ -4,7 +4,7 @@ pull_request_rules:
       - author=rodo
       - check-success=build
       - check-success=unittest
-      - check-success=postgresql
+      - check-success=integration_tests
       - base=main
     actions:
       merge:
