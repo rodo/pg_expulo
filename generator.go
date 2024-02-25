@@ -34,10 +34,6 @@ func randomFloat64() float64 {
 	return rand.Float64()
 }
 
-/*
- * String functions
- *
- */
 type SomeStruct struct {
 	String string
 }

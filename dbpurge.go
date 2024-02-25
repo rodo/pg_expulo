@@ -37,9 +37,9 @@ func getTableByFullName(config Config, name string) (Table, bool) {
 	return Table{}, false
 }
 
-func purge_destination(config Config, db_dst *sql.DB) {
+func purge_destination(config Config, dbDst *sql.DB) {
 
-	force_purge := true
+	forcePurge := true
 	var table_list []string
 	var OrderedTables []Table
 	// Order table depending on foreign keys
@@ -47,7 +47,7 @@ func purge_destination(config Config, db_dst *sql.DB) {
 		table_list = append(table_list, fullTableName(t.Schema, t.Name))
 	}
 
-	for _, tname := range OrderTableList(table_list, db_dst) {
+	for _, tname := range OrderTableList(table_list, dbDst) {
 		// table_list = append(table_list, fmt.Sprintf("%s.%s", t.Schema, t.Name))
 		t, found := getTableByFullName(config, tname)
 		if found {
@@ -70,13 +70,13 @@ func purge_destination(config Config, db_dst *sql.DB) {
 		case "append":
 			log.Debug("Do nothing on destination purge according to configuration")
 		case "delete":
-			_ = delete_data(t, force_purge, db_dst)
+			_ = delete_data(t, forcePurge, dbDst)
 		default:
 			log.Debug("TRUNCATE TABLE according to default")
 			dst_query := "TRUNCATE " + table_name + ";"
-			_, err := db_dst.Exec(dst_query)
+			_, err := dbDst.Exec(dst_query)
 			if err != nil {
-				if force_purge {
+				if forcePurge {
 					log.Error(err)
 				} else {
 					log.Fatal(err)
@@ -86,12 +86,12 @@ func purge_destination(config Config, db_dst *sql.DB) {
 	}
 }
 
-func delete_data(t Table, force_purge bool, db_dst *sql.DB) error {
+func delete_data(t Table, forcePurge bool, dbDst *sql.DB) error {
 	log.Debug(fmt.Sprintf("DELETE data from %s according to configuration", t.Name))
 	dst_query := fmt.Sprintf("DELETE FROM %s.%s", t.Schema, t.Name)
-	_, err := db_dst.Exec(dst_query)
+	_, err := dbDst.Exec(dst_query)
 	if err != nil {
-		if force_purge {
+		if forcePurge {
 			log.Error(err)
 		} else {
 			log.Fatal(err)
@@ -115,27 +115,27 @@ func delete_data(t Table, force_purge bool, db_dst *sql.DB) error {
 // pointing to them
 // The order is not perfect as it is based on numer of foreign keys
 // it's a first step
-func OrderTableList(table_list []string, db_dst *sql.DB) []string {
+func OrderTableList(table_list []string, dbDst *sql.DB) []string {
 
-	var pk_name string
+	var pkName string
 	var nb_fk int
 	var ordered_table_list []string
 	tables := "{" + strings.Join(table_list, ",") + "}"
 
 	// Query data from tableA
-	rows, erri := db_dst.Query(qry_linked_tables, tables)
+	rows, erri := dbDst.Query(qry_linked_tables, tables)
 	if erri != nil {
 		log.Fatal("Error querying data from tableA: ", erri)
 	}
 	// Iterate through the rows from tableA and insert into tableB
 	for rows.Next() {
-		if erri := rows.Scan(&pk_name, &nb_fk); erri != nil {
+		if erri := rows.Scan(&pkName, &nb_fk); erri != nil {
 			log.Error("Error scanning row: ", erri)
 
 		}
-		ordered_table_list = append(ordered_table_list, pk_name)
+		ordered_table_list = append(ordered_table_list, pkName)
 	}
 	rows.Close()
-	log.Debug(pk_name)
+	log.Debug(pkName)
 	return ordered_table_list
 }
