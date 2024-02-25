@@ -35,14 +35,13 @@ func randomFloat64() float64 {
 	return rand.Float64()
 }
 
-type SomeStruct struct {
-	String   string
-}
-
 /*
  * String functions
  *
  */
+type SomeStruct struct {
+	String   string
+}
 
 func randomString() string {
 	a := SomeStruct{}
@@ -54,7 +53,7 @@ func randomString() string {
 }
 
 func mask() string {
-	return "******"
+	return "********"
 }
 
 func md5signature(String string) string {
