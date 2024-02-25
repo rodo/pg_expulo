@@ -1,17 +1,11 @@
-queue_rules:
-  - name: hotfix
-    queue_conditions:
-      - label = hotfix
-  - name: standard
-
 pull_request_rules:
-  - name: put PRs in queue
+  - name: automatic merge rodo's PR on main
     conditions:
-      - base=main
+      - author=rodo
       - check-success=build
       - check-success=unittest
-      - check-success=postgresql
-
+      - check-success=integration_tests
+      - base=main
     actions:
       merge:
         method: merge
