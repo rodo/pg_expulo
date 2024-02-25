@@ -2,6 +2,7 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"os"
@@ -67,9 +68,9 @@ func main() {
 	}
 
 	for _, t := range config.Tables {
-		table_name := t.Name
-		batch_size := 4
-		src_query := fmt.Sprintf("SELECT * FROM %s WHERE id >= $1 AND id < $2", table_name)
+		tableFullname := fullTableName(t.Schema, t.Name)
+		//batch_size := 4
+		src_query := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
 
 		// Filter the data on source to fetch a subset of rows in a table
 		if len(t.Filter) > 0 {
@@ -77,116 +78,143 @@ func main() {
 		}
 		log.Debug(src_query)
 
-		keepRunning := true
-		run := 0
-		for keepRunning {
-			rows, err := dbSrc.Query(src_query, batch_size*run, batch_size*(run+1))
-			run = run + 1
-			if err != nil {
-				fmt.Println("Error executing query:", err)
-				os.Exit(1)
+		doTables(dbSrc, dbDst, t, src_query)
+	}
+}
+
+func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
+	tableFullname := fullTableName(t.Schema, t.Name)
+
+	rows, err := dbSrc.Query(src_query)
+	if err != nil {
+		fmt.Println("Error executing query:", err)
+		os.Exit(1)
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		fmt.Println("Error getting column names:", err)
+		return
+	}
+	var multirows [][]interface{}
+
+	count := 0
+	nbinsert := 0
+	var colnames []string
+	var colparam []string
+	for rows.Next() {
+		colnames = []string{}
+		count = count + 1
+		nbinsert = nbinsert + 1
+		cols := make([]interface{}, len(columns))
+
+		columnPointers := make([]interface{}, len(cols))
+
+		for i, _ := range cols {
+			columnPointers[i] = &cols[i]
+
+		}
+		rows.Scan(columnPointers...)
+		nbcol := 1
+		colparam = []string{}
+		var colvalue []interface{}
+		//fval := make([]interface{}, len(cols))
+		// Manage what we do it data here
+		for i, _ := range cols {
+			cfvalue := "notfound"
+			col, found := get_cols(t, columns[i])
+			if found {
+				cfvalue = col.Generator
+			} else {
+				cfvalue = "notfound"
 			}
-			defer rows.Close()
 
-			columns, err := rows.Columns()
-			if err != nil {
-				fmt.Println("Error getting column names:", err)
-				return
-			}
+			// If the configuration ignore the column it won't be present
+			// in the INSERT statement
+			if cfvalue != "ignore" {
 
-			count := 0
-			for rows.Next() {
-				var colnames []string
-				count = count + 1
-				cols := make([]interface{}, len(columns))
+				colnames = append(colnames, columns[i])
 
-				columnPointers := make([]interface{}, len(cols))
-
-				for i, _ := range cols {
-					columnPointers[i] = &cols[i]
-
+				// Assign the target value
+				switch cfvalue {
+				case "null":
+					colvalue = append(colvalue, nil)
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+				case "mask":
+					colvalue = append(colvalue, mask())
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+				case "randomInt":
+					colvalue = append(colvalue, randomInt())
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+				case "randomIntMinMax":
+					colvalue = append(colvalue, randomIntMinMax(col.Min, col.Max))
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+				case "randomFloat":
+					colvalue = append(colvalue, randomFloat())
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+				case "randomString":
+					colvalue = append(colvalue, randomString())
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+				case "md5":
+					colvalue = append(colvalue, md5signature(fmt.Sprintf("%v", cols[i])))
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+				case "randomTimeTZ":
+					colvalue = append(colvalue, randomTimeTZ(col.Timezone))
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+				case "sql":
+					nbcol = nbcol - 1
+					colparam = append(colparam, col.SQLFunction)
+				default:
+					colvalue = append(colvalue, cols[i])
+					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 				}
-				rows.Scan(columnPointers...)
-				nbcol := 1
-				var colparam []string
-				var colvalue []interface{}
-				//fval := make([]interface{}, len(cols))
-				// Manage what we do it data here
-				for i, _ := range cols {
-					cfvalue := "notfound"
-					col, found := get_cols(t, columns[i])
-					if found {
-						cfvalue = col.Generator
-					} else {
-						cfvalue = "notfound"
-					}
-
-					//colname := fullname(t.Schema, t.Name, columns[i])
-					//cfvalue := config[colname]
-
-					//log.Output(1, fmt.Sprintf("%s %s", colname, cfvalue))
-
-					// If the configuration ignore the column it won't be present
-					// in the INSERT statement
-					if cfvalue != "ignore" {
-
-						colnames = append(colnames, columns[i])
-
-						// Assign the target value
-						switch cfvalue {
-						case "null":
-							colvalue = append(colvalue, nil)
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						case "mask":
-							colvalue = append(colvalue, mask())
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						case "randomInt":
-							colvalue = append(colvalue, randomInt())
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						case "randomIntMinMax":
-							colvalue = append(colvalue, randomIntMinMax(col.Min, col.Max))
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						case "randomFloat":
-							colvalue = append(colvalue, randomFloat())
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						case "randomString":
-							colvalue = append(colvalue, randomString())
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						case "md5":
-							colvalue = append(colvalue, md5signature(fmt.Sprintf("%v", cols[i])))
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						case "randomTimeTZ":
-							colvalue = append(colvalue, randomTimeTZ(col.Timezone))
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						case "sql":
-							nbcol = nbcol - 1
-							colparam = append(colparam, col.SQLFunction)
-						default:
-							colvalue = append(colvalue, cols[i])
-							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-						}
-
-						nbcol = nbcol + 1
-
-					}
-				}
-
-				col_names := strings.Join(colnames, ",")
-
-				dst_query := "INSERT INTO " + table_name + " (" + col_names + ") VALUES (" + strings.Join(colparam, ",") + ")"
-				log.Debug(dst_query)
-				_, err := dbDst.Exec(dst_query, colvalue...)
-				if err != nil {
-					log.Error("Error during INSERT on :", table_name, err)
-					return
-				}
-
+				nbcol = nbcol + 1
 			}
-			if count == 0 {
-				keepRunning = false
-			}
-			log.Info(fmt.Sprintf("%d", count))
 		}
 
+		// INSERT
+		multirows = append(multirows, colvalue)
+
+		if nbinsert > 9 {
+			log.Debug(fmt.Sprintf("Insert %d rows in table ", nbinsert))
+			nbinsert = 0
+			insertMultiData(dbDst, tableFullname, colnames, colparam, multirows)
+			multirows = multirows[:0]
+		}
+	}
+	insertMultiData(dbDst, tableFullname, colnames, colparam, multirows)
+	log.Debug(fmt.Sprintf("Inserted %d rows in table %s", count, t.Name))
+
+}
+
+func insertMultiData(dbDst *sql.DB, tableFullname string, colnames []string, colparam []string, multirows [][]interface{}) {
+	col_names := strings.Join(colnames, ",")
+
+	nbColumns := len(colnames)
+	nbRows := len(multirows)
+
+	log.Debug(colparam)
+
+	pat := toolPat(nbRows, nbColumns, colparam)
+
+	//log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
+
+	var allValues []interface{}
+	for _, row := range multirows {
+		// Append each element of the row to allValues
+		allValues = append(allValues, row...)
+	}
+
+	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableFullname, col_names, pat)
+
+	_, err := dbDst.Exec(destQuery, allValues...)
+	if err != nil {
+		log.Debug("Error during INSERT on :", err)
+		log.Debug(destQuery)
+		log.Debug(allValues)
+		log.Fatal("Error during INSERT on :", tableFullname)
+
+		return
 	}
 }

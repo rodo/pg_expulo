@@ -1,10 +1,9 @@
 package main
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
-
 
 func TestRandomFloat32(t *testing.T) {
 	value := randomFloat32()
@@ -18,7 +17,7 @@ func TestRandomFloat32(t *testing.T) {
 }
 
 func TestRandomIntMinMax(t *testing.T) {
-	value := randomIntMinMax(10,20)
+	value := randomIntMinMax(10, 20)
 
 	if value < 10 || value > 20 {
 		t.Fatalf("randomIntMinMax return out of bounds value")

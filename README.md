@@ -11,10 +11,10 @@ The two connections strings are build from env variables, you need at leas these
     export PGSRCUSER=rodo
     export PGSRCPASSWORD=*****
     export PGSRCDATABASE=source
-    export PGDSTHOST=localhost 
+    export PGDSTHOST=localhost
     export PGDSTPORT=5432
-    export PGDSTUSER=rodo 
-    export PGDSTPASSWORD=****** 
+    export PGDSTUSER=rodo
+    export PGDSTPASSWORD=******
     export PGDSTDATABASE=destination
 
 You can laucnh expulo without any parameter
@@ -24,3 +24,5 @@ You can laucnh expulo without any parameter
 ## Configuration
 
 All configuration is done on `config.json` file which is read in the directory (will be change soon)
+
+The main concept of expulo is configuration is explicti at `table` level but implicit on `columns`, that means expulo will only act on table that are declared in configuration. On column side expulo will take all columns of the table in account.
