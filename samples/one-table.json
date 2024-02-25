@@ -1,0 +1,22 @@
+{
+    "tables": [
+        {"name": "boat",
+         "schema": "public",
+         "clean": "truncate",
+         "columns": [
+             {
+                 "name": "name",
+                 "generator": "null"
+             },
+             {
+                 "name": "value",
+                 "generator": "randomInt"
+             },
+             {
+                 "name": "town",
+                 "generator": "randomString"
+             }
+         ]
+        }
+    ]
+}
