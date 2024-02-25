@@ -180,6 +180,7 @@ func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
 			insertMultiData(dbDst, tableFullname, colnames, colparam, multirows)
 		}
 	}
+
 	log.Debug(fmt.Sprintf("Inserted %d rows in table %s", count, t.Name))
 
 }
@@ -192,7 +193,7 @@ func insertMultiData(dbDst *sql.DB, tableFullname string, colnames []string, col
 
 	pat := toolPat(nbRows, nbColumns)
 
-	log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
+	//log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
 
 	var allValues []interface{}
 	for _, row := range multirows {
@@ -208,9 +209,6 @@ func insertMultiData(dbDst *sql.DB, tableFullname string, colnames []string, col
 		log.Fatal("Error during INSERT on :", tableFullname, err)
 		return
 	}
-
-	os.Exit(1)
-
 }
 
 func insertData(dbDst *sql.DB, tableFullname string, colnames []string, colparam []string, colvalue []interface{}) {
