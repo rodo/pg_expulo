@@ -13,7 +13,6 @@ CREATE TABLE boat (
   class_code varchar(10)
 );
 
-
 CREATE TABLE skipper (
   id serial primary key,
   name text,
@@ -44,3 +43,19 @@ CREATE TABLE results (
 /* This table is not present in configuration so stay empty on destination
  */
 CREATE TABLE cheater (name text default 'fool');
+
+/*
+ *
+ *
+ */
+DROP SCHEMA IF EXISTS linked CASCADE;
+CREATE SCHEMA IF NOT EXISTS linked;
+
+
+CREATE TABLE linked.root (name text default 'fool' PRIMARY KEY);
+CREATE TABLE linked.sheetone (name text default 'fool' PRIMARY KEY REFERENCES linked.root(name));
+CREATE TABLE linked.sheettwo (name text default 'fool' PRIMARY KEY REFERENCES linked.root(name));
+CREATE TABLE linked.sheetthree (name text default 'fool' PRIMARY KEY REFERENCES linked.sheetone(name));
+CREATE TABLE linked.fish (
+  aname text default 'fool' REFERENCES linked.sheetone(name),
+  bname text default 'fool' REFERENCES linked.sheettwo(name) );

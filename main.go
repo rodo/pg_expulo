@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"flag"
 	"os"
 	"strings"
 	_ "github.com/lib/pq"
@@ -55,35 +56,24 @@ func main() {
 	log.Debug("Read config done")
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
+	// Command line flag
+	var purgeOnly bool
+	flag.BoolVar(&purgeOnly, "purge", false, "purge destination and exit")
 
-	// Loop over all tables found in configuration file
+	flag.Parse()
+
+	// Delete data on destination tables
+	purge_destination(config, db_dst)
+	os.Exit(0)
+
+	// if command line parameter set do purge and exit
+	if purgeOnly == true {
+		log.Debug("Exit on option, purge")
+		os.Exit(0)
+	}
+
 	for _, t := range config.Tables {
-
 		table_name := t.Name
-
-		log.Info(fmt.Sprintf("Work on table : %s (%s, %s)", t.Name, t.CleanMethod, t.Filter ))
-
-		// Clean destination tables
-		switch t.CleanMethod {
-		case "append":
-			log.Debug("Do nothing on destination purge according to configuration")
-		case "delete":
-			log.Debug("DELETE data from table according to configuration")
-			dst_query := "DELETE FROM " + table_name + ";"
-			_, err := db_dst.Exec(dst_query)
-			if err != nil {
-				log.Fatal(err)
-			}
-		default:
-			log.Debug("TRUNCATE TABLE according to default")
-			dst_query := "TRUNCATE " + table_name + ";"
-			_, err := db_dst.Exec(dst_query)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-
-
 		batch_size := 4
 		src_query := fmt.Sprintf("SELECT * FROM %s WHERE id >= $1 AND id < $2", table_name)
 
