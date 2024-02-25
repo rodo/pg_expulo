@@ -22,7 +22,9 @@ func main() {
 	version := "0.0.2"
 	// Command line flag
 	var purgeOnly bool
+	var tryOnly bool
 	flag.BoolVar(&purgeOnly, "purge", false, "Only purge destination tables and exit, no data will be inserted")
+	flag.BoolVar(&tryOnly, "try", false, "ROLLBACK everything on target. No data will be inserted")
 
 	flag.Parse()
 
@@ -53,6 +55,13 @@ func main() {
 	dbDst := connectDb(conxDestination)
 	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
 
+	// Start a transaction
+	txDst, err := dbDst.Begin()
+	if err != nil {
+		log.Fatal("Error starting transaction: ", err)
+	}
+	defer txDst.Rollback() // Rollback the transaction if it hasn't been committed
+
 	// Read the configuration
 	config := read_config("config.json")
 	log.Debug("Read config done")
@@ -76,13 +85,27 @@ func main() {
 		if len(t.Filter) > 0 {
 			src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
 		}
-		log.Debug(src_query)
-
-		doTables(dbSrc, dbDst, t, src_query)
+		doTables(dbSrc, txDst, t, src_query)
 	}
+
+	if tryOnly {
+		// Rollback the transaction on target as requested
+		if err := txDst.Rollback(); err != nil {
+			log.Fatal("Error committing transaction: ", err)
+		}
+		log.Info("Rollback on target")
+	} else {
+		// Commit the transaction on target if all queries succeed
+		if err := txDst.Commit(); err != nil {
+			log.Fatal("Error committing transaction: ", err)
+		} else {
+			log.Info("Commit on target")
+		}
+	}
+
 }
 
-func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
+func doTables(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) {
 	tableFullname := fullTableName(t.Schema, t.Name)
 
 	rows, err := dbSrc.Query(src_query)
@@ -179,22 +202,20 @@ func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
 		if nbinsert > 9 {
 			log.Debug(fmt.Sprintf("Insert %d rows in table ", nbinsert))
 			nbinsert = 0
-			insertMultiData(dbDst, tableFullname, colnames, colparam, multirows)
+			insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
 			multirows = multirows[:0]
 		}
 	}
-	insertMultiData(dbDst, tableFullname, colnames, colparam, multirows)
+	insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
 	log.Debug(fmt.Sprintf("Inserted %d rows in table %s", count, t.Name))
 
 }
 
-func insertMultiData(dbDst *sql.DB, tableFullname string, colnames []string, colparam []string, multirows [][]interface{}) {
+func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, colparam []string, multirows [][]interface{}) {
 	col_names := strings.Join(colnames, ",")
 
 	nbColumns := len(colnames)
 	nbRows := len(multirows)
-
-	log.Debug(colparam)
 
 	pat := toolPat(nbRows, nbColumns, colparam)
 
