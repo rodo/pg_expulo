@@ -15,10 +15,14 @@ The column will not be present in the `INSERT` statement. As is it permits to us
 
 The column will be filled with a 8 long char '********'
 
-# randomInt
+* randomInt
 
-A random integer
+  A random integer
 
-# md5
+* md5
 
 The md5 sum will be compute on the data source
+
+* sql
+
+  A SQL function that return value

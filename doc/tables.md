@@ -36,11 +36,11 @@ Contains the schema name where the table is in the postgresql database.
 
 Define how the table will be purged on target. `clean` option take the following values :
 
-* truncate, the `TRUNCATE` sql command will be used
+* **truncate**, the `TRUNCATE` sql command will be used
 
-* delete, the `DELETE` sql command will be used
+* **delete**, the `DELETE` sql command will be used
 
-* append, the table will be not purged, data will be added run after run
+* **append**, the table will be not purged, data will be added run after run
 
 
 ```code
@@ -48,7 +48,7 @@ Define how the table will be purged on target. `clean` option take the following
      {
        "name": "boat",
        "schema": "public",
-       "clean": "truncate" || "delete" ||
+       "clean": "truncate" || "delete" || "append"
      }
    ]
 ```
@@ -64,7 +64,7 @@ Define the filter to delete data on target, this option works only with `"clean"
      {
        "name": "boat",
        "schema": "public",
-       "clean": "delete"
+       "clean": "delete",
        "deletion_filter": "area != 'South'"
      }
    ]
