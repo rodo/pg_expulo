@@ -24,8 +24,8 @@ jobs:
     - name: Archive Executable
       uses: actions/upload-artifact@v4
       with:
-        name: expulo
-        path: expulo
+        name: pg_expulo
+        path: pg_expulo
 
   integration_tests:
     runs-on: ubuntu-latest
@@ -55,13 +55,10 @@ jobs:
     - name: Download Executable
       uses: actions/download-artifact@v4
       with:
-        name: expulo
+        name: pg_expulo
 
-    - name: Change file permissions on expulo
-      run: chmod +x expulo
-
-    - name: Prepare config file
-      run: mv config.sample config.json
+    - name: Change file permissions on pg_expulo
+      run: chmod +x pg_expulo
 
     - name: create db source
       run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE source'
@@ -106,7 +103,7 @@ jobs:
         PGPASSWORD: postgres
 
     - name: run binary
-      run: ./expulo
+      run: ./pg_expulo --config samples/config-ci-full.json
       env:
         PGSRCHOST: localhost
         PGSRCPORT: 5432

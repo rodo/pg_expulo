@@ -12,21 +12,70 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	Version = "0.0.2"
+)
+
+// Config store the whole configuration read from json file
+type Config struct {
+	Tables []Table `json:"tables"`
+}
+
+// Columns contains a collection of Column
+type Columns struct {
+	Columns []Column `json:"columns"`
+}
+
+// Table represent a table with her property in configuration file
+type Table struct {
+	Name        string   `json:"name"`
+	Columns     []Column `json:"columns"`
+	Schema      string   `json:"schema"`
+	CleanMethod string   `json:"clean"`
+	Filter      string   `json:"filter"`
+}
+
+type Column struct {
+	Name        string `json:"name"`
+	Generator   string `json:"generator"`
+	Min         int    `json:"min"`
+	Max         int    `json:"max"`
+	Timezone    string `json:"timezone"`
+	SQLFunction string `json:"function"`
+}
+
 func init() {
 	log.SetLevel(log.DebugLevel)
 	//	log.SetLevel(log.InfoLevel)
 
 }
 
-func main() {
-	version := "0.0.2"
-	// Command line flag
-	var purgeOnly bool
-	var tryOnly bool
-	flag.BoolVar(&purgeOnly, "purge", false, "Only purge destination tables and exit, no data will be inserted")
-	flag.BoolVar(&tryOnly, "try", false, "ROLLBACK everything on target. No data will be inserted")
+func CheckFlags() (bool, bool, string) {
+
+	version := flag.Bool("version", false, "display version")
+	tryOnly := flag.Bool("try", false, "ROLLBACK everything on target. No data will be inserted")
+	purgeOnly := flag.Bool("purge", false, "Only purge destination tables and exit, no data will be inserted")
+	configFile := flag.String("config", "config.json", "Configuration file to use")
 
 	flag.Parse()
+
+	if *version {
+
+		fmt.Println(Version)
+		os.Exit(0)
+	}
+	return *purgeOnly, *tryOnly, *configFile
+}
+
+func main() {
+
+	// Command line flag
+	purgeOnly, tryOnly, configFile := CheckFlags()
+
+	// Read the configuration
+	config := readConfig(configFile)
+	log.Debug("Read config done")
+	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
 	// Read connection information from env variables
 	srcHost := os.Getenv("PGSRCHOST")
@@ -42,8 +91,8 @@ func main() {
 	dstDb := os.Getenv("PGDSTDATABASE")
 
 	// Construct connection string
-	conxSource, dsnSrc := get_dsn(srcHost, srcPort, srcUser, srcPass, srcDb, version)
-	conxDestination, dsnDst := get_dsn(dstHost, dstPort, dstUser, dstPass, dstDb, version)
+	conxSource, dsnSrc := get_dsn(srcHost, srcPort, srcUser, srcPass, srcDb, Version)
+	conxDestination, dsnDst := get_dsn(dstHost, dstPort, dstUser, dstPass, dstDb, Version)
 
 	// Connect to the database source
 	log.Debug("Connect on source")
@@ -61,31 +110,26 @@ func main() {
 		log.Fatal("Error starting transaction: ", err)
 	}
 
-	// Read the configuration
-	config := read_config("config.json")
-	log.Debug("Read config done")
-	log.Debug("Number of tables found in conf: ", len(config.Tables))
-
 	// Delete data on destination tables
-	purgeTarget(config, dbDst)
+	purgeTarget(config, txDst)
 
 	// if command line parameter set do purge and exit
 	if purgeOnly == true {
 		log.Debug("Exit on option, purge")
-		txDst.Rollback() // Rollback the transaction if it hasn't been committed
-		os.Exit(0)
-	}
 
-	for _, t := range config.Tables {
-		tableFullname := fullTableName(t.Schema, t.Name)
+	} else {
 
-		src_query := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
+		for _, t := range config.Tables {
+			tableFullname := fullTableName(t.Schema, t.Name)
 
-		// Filter the data on source to fetch a subset of rows in a table
-		if len(t.Filter) > 0 {
-			src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
+			src_query := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
+
+			// Filter the data on source to fetch a subset of rows in a table
+			if len(t.Filter) > 0 {
+				src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
+			}
+			doTables(dbSrc, txDst, t, src_query)
 		}
-		doTables(dbSrc, txDst, t, src_query)
 	}
 
 	if tryOnly {
@@ -146,7 +190,7 @@ func doTables(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) {
 		// Manage what we do it data here
 		for i, _ := range cols {
 			cfvalue := "notfound"
-			col, found := get_cols(t, columns[i])
+			col, found := getCols(t, columns[i])
 			if found {
 				cfvalue = col.Generator
 			} else {

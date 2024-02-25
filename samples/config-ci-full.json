@@ -1,0 +1,67 @@
+{
+    "tables": [
+        {"name": "boat",
+         "schema": "public",
+         "clean": "truncate",
+         "columns": [
+             {
+                 "name": "name",
+                 "generator": "null"
+             },
+             {
+                 "name": "value",
+                 "generator": "randomInt"
+             },
+             {
+                 "name": "town",
+                 "generator": "randomString"
+             }
+         ]
+        },
+        {"name": "race",
+         "schema": "public",
+         "filter": "profile='public'",
+         "columns": [
+             {
+                 "name": "name",
+                 "generator": "null"
+             }
+         ]
+        },
+        {"name": "results",
+         "schema": "public",
+         "clean": "append",
+         "columns": [
+             {
+                 "name": "id",
+                 "generator": "ignore"
+             }]
+        },
+        {"name": "skipper",
+         "schema": "public",
+         "clean": "delete",
+         "columns": [
+             {
+                 "name": "id",
+                 "generator": "ignore"
+             },
+             {
+                 "name": "name",
+                 "generator": "md5"
+             },
+             {
+                 "name": "age",
+                 "generator": "randomIntMinMax",
+                 "min": 10,
+                 "max": 84
+             },
+             {
+                 "name": "updated_at",
+                 "generator": "sql",
+                 "function": "now()"
+             }
+         ]
+        }
+    ]
+
+}

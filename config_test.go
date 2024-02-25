@@ -5,31 +5,31 @@ import (
 )
 
 // The column exist
-func TestGet_cols(t *testing.T) {
+func TestGetCols(t *testing.T) {
 
 	column := Column{"id", "random", 0, 42, "UTC", "getRandomString()"}
 
 	conf := Table{"boat", []Column{column}, "public", "delete", "id < 42"}
 
-	col, _ := get_cols(conf, "id")
+	col, _ := getCols(conf, "id")
 
 	if col != column {
-		t.Fatalf("get_cols does not return valid dsn")
+		t.Fatalf("getCols does not return valid dsn")
 	}
 
 }
 
 // The column does not exist
-func TestGet_colsNotFound(t *testing.T) {
+func TestGetColsNotFound(t *testing.T) {
 
 	column := Column{"id", "random", 0, 42, "UTC", "getRandomString()"}
 
 	conf := Table{"boat", []Column{column}, "public", "delete", "id < 42"}
 
-	_, found := get_cols(conf, "name")
+	_, found := getCols(conf, "name")
 
 	if found {
-		t.Fatalf("get_cols does not return valid dsn")
+		t.Fatalf("getCols does not return valid dsn")
 	}
 
 }

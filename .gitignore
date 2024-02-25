@@ -24,7 +24,7 @@ go.work
 *~
 
 # Configuration file
-*.json
+config.json
 
 # binary file
-expulo
+pg_expulo
