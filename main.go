@@ -60,7 +60,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error starting transaction: ", err)
 	}
-	defer txDst.Rollback() // Rollback the transaction if it hasn't been committed
 
 	// Read the configuration
 	config := read_config("config.json")
@@ -73,12 +72,13 @@ func main() {
 	// if command line parameter set do purge and exit
 	if purgeOnly == true {
 		log.Debug("Exit on option, purge")
+		txDst.Rollback() // Rollback the transaction if it hasn't been committed
 		os.Exit(0)
 	}
 
 	for _, t := range config.Tables {
 		tableFullname := fullTableName(t.Schema, t.Name)
-		//batch_size := 4
+
 		src_query := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
 
 		// Filter the data on source to fetch a subset of rows in a table
@@ -128,8 +128,8 @@ func doTables(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) {
 	var colparam []string
 	for rows.Next() {
 		colnames = []string{}
-		count = count + 1
-		nbinsert = nbinsert + 1
+		count++
+		nbinsert++
 		cols := make([]interface{}, len(columns))
 
 		columnPointers := make([]interface{}, len(cols))
@@ -142,7 +142,7 @@ func doTables(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) {
 		nbcol := 1
 		colparam = []string{}
 		var colvalue []interface{}
-		//fval := make([]interface{}, len(cols))
+
 		// Manage what we do it data here
 		for i, _ := range cols {
 			cfvalue := "notfound"
@@ -186,13 +186,13 @@ func doTables(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) {
 					colvalue = append(colvalue, randomTimeTZ(col.Timezone))
 					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 				case "sql":
-					nbcol = nbcol - 1
+					nbcol--
 					colparam = append(colparam, col.SQLFunction)
 				default:
 					colvalue = append(colvalue, cols[i])
 					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 				}
-				nbcol = nbcol + 1
+				nbcol++
 			}
 		}
 
@@ -219,7 +219,7 @@ func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, col
 
 	pat := toolPat(nbRows, nbColumns, colparam)
 
-	//log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
+	// log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
 
 	var allValues []interface{}
 	for _, row := range multirows {
