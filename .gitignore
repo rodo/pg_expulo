@@ -27,4 +27,4 @@ go.work
 *.json
 
 # binary file
-expulo
+pg_expulo

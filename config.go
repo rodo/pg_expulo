@@ -9,41 +9,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Config store the whole configuration read from json file
-type Config struct {
-	Tables []Table `json:"tables"`
-}
+// Read configuration file in json from disk
+func readConfig(filename string) Config {
 
-// Columns contains a collection of Column
-type Columns struct {
-	Columns []Column `json:"columns"`
-}
-
-// Table represent a table with her property in configuration file
-type Table struct {
-	Name        string   `json:"name"`
-	Columns     []Column `json:"columns"`
-	Schema      string   `json:"schema"`
-	CleanMethod string   `json:"clean"`
-	Filter      string   `json:"filter"`
-}
-
-type Column struct {
-	Name        string `json:"name"`
-	Generator   string `json:"generator"`
-	Min         int    `json:"min"`
-	Max         int    `json:"max"`
-	Timezone    string `json:"timezone"`
-	SQLFunction string `json:"function"`
-}
-
-func read_config(fileName string) Config {
-
-	jsonFile, err := os.Open(fileName)
-	if err != nil {
-		fmt.Println(err)
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		log.Fatal(fmt.Sprintf("file '%s' does not exist", filename))
 	}
-	log.Info("Successfully Opened : ", fileName)
+
+	jsonFile, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("error opening file '%s': %v", filename, err))
+	}
+	log.Info("Successfully Opened : ", filename)
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 
@@ -61,25 +39,11 @@ func read_config(fileName string) Config {
 		panic(err)
 	}
 
-	// tlist := []string{}
-
-	// for i := 0; i < len(tables.Tables); i++ {
-	//	tlist = append(tlist, tables.Tables[i].Name)
-
-	//	for j := 0; j < len(tables.Tables[i].Columns); j++ {
-
-	//		fullname := fmt.Sprintf("%s.%s.%s", tables.Tables[i].Schema,
-	//			tables.Tables[i].Name,
-	//			tables.Tables[i].Columns[j].Name)
-	//		//log.Debug(fullname)
-	//	}
-	// }
-
 	return tables
 }
 
 // Return the column columnName in the table Table
-func get_cols(conf Table, columName string) (Column, bool) {
+func getCols(conf Table, columName string) (Column, bool) {
 	found := false
 	var result Column
 	for j := 0; j < len(conf.Columns); j++ {

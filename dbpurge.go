@@ -37,7 +37,7 @@ func getTableByFullName(config Config, name string) (Table, bool) {
 	return Table{}, false
 }
 
-func purgeTarget(config Config, dbDst *sql.DB) {
+func purgeTarget(config Config, txDst *sql.Tx) {
 
 	forcePurge := true
 	var table_list []string
@@ -47,7 +47,7 @@ func purgeTarget(config Config, dbDst *sql.DB) {
 		table_list = append(table_list, fullTableName(t.Schema, t.Name))
 	}
 
-	for _, tname := range OrderTableList(table_list, dbDst) {
+	for _, tname := range OrderTableList(table_list, txDst) {
 		// table_list = append(table_list, fmt.Sprintf("%s.%s", t.Schema, t.Name))
 		t, found := getTableByFullName(config, tname)
 		if found {
@@ -70,11 +70,11 @@ func purgeTarget(config Config, dbDst *sql.DB) {
 		case "append":
 			log.Debug("Do nothing on target purge according to configuration")
 		case "delete":
-			_ = deleteData(t, forcePurge, dbDst)
+			_ = deleteData(t, forcePurge, txDst)
 		default:
 			log.Debug("TRUNCATE TABLE according to default")
 			dst_query := "TRUNCATE " + table_name + ";"
-			_, err := dbDst.Exec(dst_query)
+			_, err := txDst.Exec(dst_query)
 			if err != nil {
 				if forcePurge {
 					log.Error(err)
@@ -86,10 +86,10 @@ func purgeTarget(config Config, dbDst *sql.DB) {
 	}
 }
 
-func deleteData(t Table, forcePurge bool, dbDst *sql.DB) error {
+func deleteData(t Table, forcePurge bool, txDst *sql.Tx) error {
 	log.Debug(fmt.Sprintf("DELETE data from %s according to configuration", t.Name))
 	dst_query := fmt.Sprintf("DELETE FROM %s.%s", t.Schema, t.Name)
-	_, err := dbDst.Exec(dst_query)
+	_, err := txDst.Exec(dst_query)
 	if err != nil {
 		if forcePurge {
 			log.Error(err)
@@ -115,7 +115,7 @@ func deleteData(t Table, forcePurge bool, dbDst *sql.DB) error {
 // pointing to them
 // The order is not perfect as it is based on numer of foreign keys
 // it's a first step
-func OrderTableList(table_list []string, dbDst *sql.DB) []string {
+func OrderTableList(table_list []string, txDst *sql.Tx) []string {
 
 	var pkName string
 	var nb_fk int
@@ -123,7 +123,7 @@ func OrderTableList(table_list []string, dbDst *sql.DB) []string {
 	tables := "{" + strings.Join(table_list, ",") + "}"
 
 	// Query data from tableA
-	rows, erri := dbDst.Query(qry_linked_tables, tables)
+	rows, erri := txDst.Query(qry_linked_tables, tables)
 	if erri != nil {
 		log.Fatal("Error querying data from tableA: ", erri)
 	}

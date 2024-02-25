@@ -1,4 +1,4 @@
-module expulo
+module pg_expulo
 
 go 1.18
 
