@@ -97,11 +97,14 @@ func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
 		fmt.Println("Error getting column names:", err)
 		return
 	}
+	var multirows [][]interface{}
 
 	count := 0
+	nbinsert := 0
 	for rows.Next() {
 		var colnames []string
 		count = count + 1
+		nbinsert = nbinsert + 1
 		cols := make([]interface{}, len(columns))
 
 		columnPointers := make([]interface{}, len(cols))
@@ -124,11 +127,6 @@ func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
 			} else {
 				cfvalue = "notfound"
 			}
-
-			//colname := fullname(t.Schema, t.Name, columns[i])
-			//cfvalue := config[colname]
-
-			//log.Output(1, fmt.Sprintf("%s %s", colname, cfvalue))
 
 			// If the configuration ignore the column it won't be present
 			// in the INSERT statement
@@ -169,22 +167,61 @@ func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
 					colvalue = append(colvalue, cols[i])
 					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 				}
-
 				nbcol = nbcol + 1
-
 			}
 		}
 
-		col_names := strings.Join(colnames, ",")
+		// INSERT
+		multirows = append(multirows, colvalue)
 
-		dst_query := "INSERT INTO " + tableFullname + " (" + col_names + ") VALUES (" + strings.Join(colparam, ",") + ")"
-		log.Debug(dst_query)
-		_, err := dbDst.Exec(dst_query, colvalue...)
-		if err != nil {
-			log.Fatal("Error during INSERT on :", tableFullname, err)
-			return
+		if nbinsert > 9 {
+			log.Debug(fmt.Sprintf("Insert %d rows in table ", nbinsert))
+			nbinsert = 0
+			insertMultiData(dbDst, tableFullname, colnames, colparam, multirows)
 		}
+	}
+	log.Debug(fmt.Sprintf("Inserted %d rows in table %s", count, t.Name))
 
+}
+
+func insertMultiData(dbDst *sql.DB, tableFullname string, colnames []string, colparam []string, multirows [][]interface{}) {
+	col_names := strings.Join(colnames, ",")
+
+	nbColumns := len(colnames)
+	nbRows := len(multirows)
+
+	pat := toolPat(nbRows, nbColumns)
+
+	log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
+
+	var allValues []interface{}
+	for _, row := range multirows {
+		// Append each element of the row to allValues
+		allValues = append(allValues, row...)
 	}
 
+	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableFullname, col_names, pat)
+
+	log.Debug(destQuery)
+	_, err := dbDst.Exec(destQuery, allValues...)
+	if err != nil {
+		log.Fatal("Error during INSERT on :", tableFullname, err)
+		return
+	}
+
+	os.Exit(1)
+
+}
+
+func insertData(dbDst *sql.DB, tableFullname string, colnames []string, colparam []string, colvalue []interface{}) {
+	col_names := strings.Join(colnames, ",")
+	values := strings.Join(colparam, ",")
+
+	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableFullname, col_names, values)
+	log.Debug(destQuery)
+	_, err := dbDst.Exec(destQuery, colvalue...)
+	if err != nil {
+		log.Fatal("Error during INSERT on :", tableFullname, err)
+		return
+	}
 }
