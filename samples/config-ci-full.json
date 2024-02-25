@@ -61,7 +61,15 @@
                  "function": "now()"
              }
          ]
-        }
+        },
+        {"schema": "public",
+         "name": "town",
+         "clean": "delete"},
+        {"schema": "linked", "name": "root", "clean": "delete"},
+        {"schema": "linked", "name": "sheetone", "clean": "delete"},
+        {"schema": "linked", "name": "sheettwo", "clean": "delete"},
+        {"schema": "linked", "name": "sheetthree", "clean": "delete"},
+        {"name": "fish", "schema": "linked", "clean": "delete"}
     ]
 
 }

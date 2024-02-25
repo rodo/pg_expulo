@@ -38,3 +38,7 @@ INSERT INTO linked.sheetone (name) VALUES ('two');
 INSERT INTO linked.sheettwo (name) VALUES ('one');
 INSERT INTO linked.sheetthree (name) VALUES ('one');
 INSERT INTO linked.fish (aname, bname) VALUES ('one', 'one');
+--
+-- we sync only rows with area=North
+-- data for other area exists on target
+INSERT INTO town (name, area) VALUES ('Brest', 'North');

@@ -63,17 +63,20 @@ jobs:
     - name: create db source
       run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE source'
 
-    - name: create db destination
-      run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE destination'
+    - name: create db target
+      run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE target'
 
     - name: create structure source
       run: psql "postgres://postgres:postgres@localhost:5432/source" -f data_test/tables.sql
 
-    - name: create structure destination
-      run: psql "postgres://postgres:postgres@localhost:5432/destination" -f data_test/tables.sql
+    - name: create structure target
+      run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/tables.sql
 
     - name: fill db source
       run: psql "postgres://postgres:postgres@localhost:5432/source" -f data_test/data.sql
+
+    - name: fill db target
+      run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/data-target.sql
 
     - name: install pg_prove
       run: sudo cpan TAP::Parser::SourceHandler::pgTAP
@@ -96,9 +99,9 @@ jobs:
       env:
         PGPASSWORD: postgres
 
-    - name: install pgtap on destination
+    - name: install pgtap on target
       working-directory: pgtap
-      run: psql --host localhost --username postgres --dbname destination --file sql/pgtap.sql
+      run: psql --host localhost --username postgres --dbname target --file sql/pgtap.sql
       env:
         PGPASSWORD: postgres
 
@@ -114,9 +117,9 @@ jobs:
         PGDSTPORT: 5432
         PGDSTUSER: postgres
         PGDSTPASSWORD: postgres
-        PGDSTDATABASE: destination
+        PGDSTDATABASE: target
 
-    - name: check results in destination
-      run: pg_prove -v --host localhost --dbname destination --username postgres data_test/*_test.sql
+    - name: check results in target
+      run: pg_prove -v --host localhost --dbname target --username postgres data_test/*_test.sql
       env:
         PGPASSWORD: postgres

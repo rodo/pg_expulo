@@ -1,4 +1,7 @@
+SET client_min_messages TO WARNING;
+
 DROP TABLE IF EXISTS race;
+DROP TABLE IF EXISTS town;
 DROP TABLE IF EXISTS results;
 DROP TABLE IF EXISTS boat;
 DROP TABLE IF EXISTS skipper;
@@ -40,9 +43,16 @@ CREATE TABLE results (
   year int
 );
 
-/* This table is not present in configuration so stay empty on destination
- */
+/* This table is not present in configuration so stay empty on
+   destination
+*/
 CREATE TABLE cheater (name text default 'fool');
+
+/* This table already contains data on destination and is not full
+   purged
+   Primary Key non integer
+*/
+CREATE TABLE town (name text PRIMARY KEY, area text default 'North');
 
 /*
  *
