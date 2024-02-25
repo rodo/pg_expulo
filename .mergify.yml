@@ -15,12 +15,11 @@ pull_request_rules:
 
   - name: put PRs in queue
     conditions:
-      - and:
-          - base=main
-          - check-success:
-              build
-              unittest
-              postgresql
+      - base=main
+      - check-success:
+          - build
+          - unittest
+          - postgresql
 
     actions:
       merge:
