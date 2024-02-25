@@ -68,7 +68,7 @@ func main() {
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
 	// Delete data on destination tables
-	purge_destination(config, dbDst)
+	purgeTarget(config, dbDst)
 
 	// if command line parameter set do purge and exit
 	if purgeOnly == true {
