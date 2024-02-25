@@ -101,8 +101,10 @@ func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
 
 	count := 0
 	nbinsert := 0
+	var colnames []string
+	var colparam []string
 	for rows.Next() {
-		var colnames []string
+		colnames = []string{}
 		count = count + 1
 		nbinsert = nbinsert + 1
 		cols := make([]interface{}, len(columns))
@@ -115,7 +117,7 @@ func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
 		}
 		rows.Scan(columnPointers...)
 		nbcol := 1
-		var colparam []string
+		colparam = []string{}
 		var colvalue []interface{}
 		//fval := make([]interface{}, len(cols))
 		// Manage what we do it data here
@@ -178,9 +180,10 @@ func doTables(dbSrc *sql.DB, dbDst *sql.DB, t Table, src_query string) {
 			log.Debug(fmt.Sprintf("Insert %d rows in table ", nbinsert))
 			nbinsert = 0
 			insertMultiData(dbDst, tableFullname, colnames, colparam, multirows)
+			multirows = multirows[:0]
 		}
 	}
-
+	insertMultiData(dbDst, tableFullname, colnames, colparam, multirows)
 	log.Debug(fmt.Sprintf("Inserted %d rows in table %s", count, t.Name))
 
 }
@@ -191,7 +194,9 @@ func insertMultiData(dbDst *sql.DB, tableFullname string, colnames []string, col
 	nbColumns := len(colnames)
 	nbRows := len(multirows)
 
-	pat := toolPat(nbRows, nbColumns)
+	log.Debug(colparam)
+
+	pat := toolPat(nbRows, nbColumns, colparam)
 
 	//log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
 
@@ -203,23 +208,13 @@ func insertMultiData(dbDst *sql.DB, tableFullname string, colnames []string, col
 
 	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableFullname, col_names, pat)
 
-	log.Debug(destQuery)
 	_, err := dbDst.Exec(destQuery, allValues...)
 	if err != nil {
-		log.Fatal("Error during INSERT on :", tableFullname, err)
-		return
-	}
-}
+		log.Debug("Error during INSERT on :", err)
+		log.Debug(destQuery)
+		log.Debug(allValues)
+		log.Fatal("Error during INSERT on :", tableFullname)
 
-func insertData(dbDst *sql.DB, tableFullname string, colnames []string, colparam []string, colvalue []interface{}) {
-	col_names := strings.Join(colnames, ",")
-	values := strings.Join(colparam, ",")
-
-	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableFullname, col_names, values)
-	log.Debug(destQuery)
-	_, err := dbDst.Exec(destQuery, colvalue...)
-	if err != nil {
-		log.Fatal("Error during INSERT on :", tableFullname, err)
 		return
 	}
 }

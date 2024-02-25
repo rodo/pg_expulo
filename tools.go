@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func toolPat(nbRows int, nbCols int) string {
+func toolPat(nbRows int, nbCols int, colparam []string) string {
 	x := 1
 	r := 0
 
@@ -15,7 +15,11 @@ func toolPat(nbRows int, nbCols int) string {
 	for r < nbRows {
 		for c < nbCols {
 
-			j = append(j, fmt.Sprintf("$%d", x))
+			if colparam[c] != fmt.Sprintf("$%d", c+1) {
+				j = append(j, colparam[c])
+			} else {
+				j = append(j, fmt.Sprintf("$%d", x))
+			}
 			c = c + 1
 			x = x + 1
 
