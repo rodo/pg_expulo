@@ -1,41 +1,40 @@
 package main
 
 import (
-	"os"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"encoding/json"
+	"os"
+
 	log "github.com/sirupsen/logrus"
 )
 
-
 type Config struct {
-    Tables []Table `json:"tables"`
+	Tables []Table `json:"tables"`
 }
 
 type Columns struct {
-    Columns []Column `json:"columns"`
+	Columns []Column `json:"columns"`
 }
 
 // User struct which contains a name
 // a type and a list of social links
 type Table struct {
-	Name   string `json:"name"`
-	Columns []Column `json:"columns"`
-	Schema string `json:"schema"`
-	CleanMethod string `json:"clean"`
-	Filter string `json:"filter"`
+	Name        string   `json:"name"`
+	Columns     []Column `json:"columns"`
+	Schema      string   `json:"schema"`
+	CleanMethod string   `json:"clean"`
+	Filter      string   `json:"filter"`
 }
 
 type Column struct {
-	Name   string `json:"name"`
-	Generator string `json:"generator"`
-	Min int `json:"min"`
-	Max int `json:"max"`
-	Timezone string `json:"timezone"`
+	Name        string `json:"name"`
+	Generator   string `json:"generator"`
+	Min         int    `json:"min"`
+	Max         int    `json:"max"`
+	Timezone    string `json:"timezone"`
 	SQLFunction string `json:"function"`
 }
-
 
 func read_config(fileName string) Config {
 
@@ -78,16 +77,16 @@ func read_config(fileName string) Config {
 	return tables
 }
 
-func get_cols(conf Table, columName string) (Column, int) {
-	err := 1
+// Return the column columnName in the table Table
+func get_cols(conf Table, columName string) (Column, bool) {
+	found := false
 	var result Column
 	for j := 0; j < len(conf.Columns); j++ {
 		if columName == conf.Columns[j].Name {
 			result = conf.Columns[j]
-			err = 0
+			found = true
 		}
 
 	}
-
-	return result, err
+	return result, found
 }

@@ -1,9 +1,10 @@
 package main
 
 import (
-	"os"
-	"fmt"
 	"database/sql"
+	"fmt"
+	"os"
+
 	_ "github.com/lib/pq"
 )
 
@@ -33,4 +34,12 @@ func connectDb(connectionString string) *sql.DB {
 	}
 
 	return db
+}
+
+func fullname(schemaname string, datname string, attname string) string {
+	return fmt.Sprintf("%s.%s.%s", schemaname, datname, attname)
+}
+
+func fullTableName(schemaname string, datname string) string {
+	return fmt.Sprintf("%s.%s", schemaname, datname)
 }

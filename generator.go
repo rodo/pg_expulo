@@ -1,13 +1,12 @@
 package main
 
-
 import (
 	"crypto/md5"
-	"math/rand"
 	"fmt"
+	"math/rand"
 	"time"
-	"github.com/go-faker/faker/v4"
 
+	"github.com/go-faker/faker/v4"
 )
 
 func randomInt() int32 {
@@ -35,12 +34,8 @@ func randomFloat64() float64 {
 	return rand.Float64()
 }
 
-/*
- * String functions
- *
- */
 type SomeStruct struct {
-	String   string
+	String string
 }
 
 func randomString() string {
@@ -56,8 +51,8 @@ func mask() string {
 	return "********"
 }
 
-func md5signature(String string) string {
-	data := []byte(String)
+func md5signature(alpha string) string {
+	data := []byte(alpha)
 	return fmt.Sprintf("%x", md5.Sum(data))
 }
 

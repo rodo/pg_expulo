@@ -26,3 +26,13 @@ INSERT INTO race (name, profile) VALUES ('Globe Challenge', 'public');
 INSERT INTO race (name, profile) VALUES ('RORC Caribbean 600', 'public');
 INSERT INTO race (name, profile) VALUES ('Plastimo Lorient Mini - PLM 6.50', 'public');
 INSERT INTO race (name, profile) VALUES ('Les potes et moi', 'private');
+--
+--
+--
+INSERT INTO linked.root (name) VALUES ('one');
+INSERT INTO linked.root (name) VALUES ('two');
+INSERT INTO linked.sheetone (name) VALUES ('one');
+INSERT INTO linked.sheetone (name) VALUES ('two');
+INSERT INTO linked.sheettwo (name) VALUES ('one');
+INSERT INTO linked.sheetthree (name) VALUES ('one');
+INSERT INTO linked.fish (aname, bname) VALUES ('one', 'one');

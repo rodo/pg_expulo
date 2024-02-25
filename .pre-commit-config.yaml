@@ -1,0 +1,24 @@
+repos:
+- repo: https://github.com/dnephin/pre-commit-golang
+  rev: v0.5.1
+  hooks:
+    - id: go-fmt
+    - id: go-vet
+#    - id: go-lint
+    - id: go-imports
+    - id: go-cyclo
+      args: [-over=25]
+    - id: validate-toml
+    - id: no-go-testing
+#    - id: golangci-lint
+#    - id: go-critic
+    - id: go-unit-tests
+    - id: go-build
+    - id: go-mod-tidy
+
+- repo: https://github.com/sqlfluff/sqlfluff
+  rev: 2.3.5
+  hooks:
+    - id: sqlfluff-lint
+    - id: sqlfluff-fix
+      stages: [manual]  # this command is available only to run manually

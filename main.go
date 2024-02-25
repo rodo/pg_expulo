@@ -2,88 +2,72 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strings"
+
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
-
-
-func fullname(schemaname string, datname string, attname string) string {
-	return fmt.Sprintf("%s.%s.%s", schemaname, datname, attname)
-}
-
-
 func init() {
 	log.SetLevel(log.DebugLevel)
 	//	log.SetLevel(log.InfoLevel)
+
 }
 
 func main() {
-	version := "0.0.1"
-	// Read connection information from env variables
-	src_host := os.Getenv("PGSRCHOST")
-	src_port := os.Getenv("PGSRCPORT")
-	src_user := os.Getenv("PGSRCUSER")
-	src_pass := os.Getenv("PGSRCPASSWORD")
-	src_db   := os.Getenv("PGSRCDATABASE")
+	version := "0.0.2"
+	// Command line flag
+	var purgeOnly bool
+	flag.BoolVar(&purgeOnly, "purge", false, "Only purge destination tables and exit, no data will be inserted")
 
-	dst_host := os.Getenv("PGDSTHOST")
-	dst_port := os.Getenv("PGDSTPORT")
-	dst_user := os.Getenv("PGDSTUSER")
-	dst_pass := os.Getenv("PGDSTPASSWORD")
-	dst_db   := os.Getenv("PGDSTDATABASE")
+	flag.Parse()
+
+	// Read connection information from env variables
+	srcHost := os.Getenv("PGSRCHOST")
+	srcPort := os.Getenv("PGSRCPORT")
+	srcUser := os.Getenv("PGSRCUSER")
+	srcPass := os.Getenv("PGSRCPASSWORD")
+	srcDb := os.Getenv("PGSRCDATABASE")
+
+	dstHost := os.Getenv("PGDSTHOST")
+	dstPort := os.Getenv("PGDSTPORT")
+	dstUser := os.Getenv("PGDSTUSER")
+	dstPass := os.Getenv("PGDSTPASSWORD")
+	dstDb := os.Getenv("PGDSTDATABASE")
 
 	// Construct connection string
-	conxSource, dsn_src := get_dsn(src_host, src_port, src_user, src_pass, src_db, version)
-	conxDestination, dsn_dst := get_dsn(dst_host, dst_port, dst_user, dst_pass, dst_db, version)
+	conxSource, dsnSrc := get_dsn(srcHost, srcPort, srcUser, srcPass, srcDb, version)
+	conxDestination, dsnDst := get_dsn(dstHost, dstPort, dstUser, dstPass, dstDb, version)
 
 	// Connect to the database source
 	log.Debug("Connect on source")
-	db_src := connectDb(conxSource)
-	log.Info(fmt.Sprintf("Use %s as source", dsn_src))
+	dbSrc := connectDb(conxSource)
+	log.Info(fmt.Sprintf("Use %s as source", dsnSrc))
 
 	// Connect to the database destination
 	log.Debug("Connect on destination")
-	db_dst := connectDb(conxDestination)
-	log.Info(fmt.Sprintf("Use %s as destination", dsn_dst))
+	dbDst := connectDb(conxDestination)
+	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
 
 	// Read the configuration
 	config := read_config("config.json")
 	log.Debug("Read config done")
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
+	// Delete data on destination tables
+	purge_destination(config, dbDst)
 
-	// Loop over all tables found in configuration file
+	// if command line parameter set do purge and exit
+	if purgeOnly == true {
+		log.Debug("Exit on option, purge")
+		os.Exit(0)
+	}
+
 	for _, t := range config.Tables {
-
 		table_name := t.Name
-
-		log.Info(fmt.Sprintf("Work on table : %s (%s, %s)", t.Name, t.CleanMethod, t.Filter ))
-
-		// Clean destination tables
-		switch t.CleanMethod {
-		case "append":
-			log.Debug("Do nothing on destination purge according to configuration")
-		case "delete":
-			log.Debug("DELETE data from table according to configuration")
-			dst_query := "DELETE FROM " + table_name + ";"
-			_, err := db_dst.Exec(dst_query)
-			if err != nil {
-				log.Fatal(err)
-			}
-		default:
-			log.Debug("TRUNCATE TABLE according to default")
-			dst_query := "TRUNCATE " + table_name + ";"
-			_, err := db_dst.Exec(dst_query)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-
-
 		batch_size := 4
 		src_query := fmt.Sprintf("SELECT * FROM %s WHERE id >= $1 AND id < $2", table_name)
 
@@ -96,7 +80,7 @@ func main() {
 		keepRunning := true
 		run := 0
 		for keepRunning {
-			rows, err := db_src.Query(src_query, batch_size * run, batch_size * (run + 1))
+			rows, err := dbSrc.Query(src_query, batch_size*run, batch_size*(run+1))
 			run = run + 1
 			if err != nil {
 				fmt.Println("Error executing query:", err)
@@ -130,11 +114,11 @@ func main() {
 				// Manage what we do it data here
 				for i, _ := range cols {
 					cfvalue := "notfound"
-					col, err := get_cols(t, columns[i])
-					if err == 1 {
-						cfvalue = "notfound"
-					} else {
+					col, found := get_cols(t, columns[i])
+					if found {
 						cfvalue = col.Generator
+					} else {
+						cfvalue = "notfound"
 					}
 
 					//colname := fullname(t.Schema, t.Name, columns[i])
@@ -149,7 +133,7 @@ func main() {
 						colnames = append(colnames, columns[i])
 
 						// Assign the target value
-						switch cfvalue{
+						switch cfvalue {
 						case "null":
 							colvalue = append(colvalue, nil)
 							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
@@ -182,26 +166,27 @@ func main() {
 							colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 						}
 
-						nbcol = nbcol +1
+						nbcol = nbcol + 1
 
 					}
 				}
 
 				col_names := strings.Join(colnames, ",")
 
-				dst_query := "INSERT INTO " + table_name + " (" + col_names + ") VALUES ("+strings.Join(colparam,",") + ")"
+				dst_query := "INSERT INTO " + table_name + " (" + col_names + ") VALUES (" + strings.Join(colparam, ",") + ")"
 				log.Debug(dst_query)
-				_, err := db_dst.Exec(dst_query, colvalue...)
+				_, err := dbDst.Exec(dst_query, colvalue...)
 				if err != nil {
 					log.Error("Error during INSERT on :", table_name, err)
 					return
 				}
 
 			}
-			if count == 0 { keepRunning = false }
-			log.Info(fmt.Sprintf("%d",count))
+			if count == 0 {
+				keepRunning = false
+			}
+			log.Info(fmt.Sprintf("%d", count))
 		}
-
 
 	}
 }
