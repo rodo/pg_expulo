@@ -9,16 +9,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Config store the whole configuration read from json file
 type Config struct {
 	Tables []Table `json:"tables"`
 }
 
+// Columns contains a collection of Column
 type Columns struct {
 	Columns []Column `json:"columns"`
 }
 
-// User struct which contains a name
-// a type and a list of social links
+// Table represent a table with her property in configuration file
 type Table struct {
 	Name        string   `json:"name"`
 	Columns     []Column `json:"columns"`

@@ -5,10 +5,23 @@ queue_rules:
   - name: standard
 
 pull_request_rules:
+  - name: add lablel when author is rodo
+    conditions:
+      - author = rodo
+    actions:
+      label:
+        add:
+          - Rodolphe
+
   - name: put PRs in queue
     conditions:
       - and:
           - base=main
-          - check-success=unittest
+          - check-success:
+              build
+              unittest
+              postgresql
+
     actions:
-      queue:
+      merge:
+        method:merge
