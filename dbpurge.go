@@ -17,7 +17,7 @@ var qry_primary_key string
 //go:embed sql/linked_tables.sql
 var qry_linked_tables string
 
-// Purge all the tables in the database destination
+// Purge all the tables in the database target
 
 func getTableByName(config Config, name string) (Table, bool) {
 	for _, table := range config.Tables {
@@ -37,7 +37,7 @@ func getTableByFullName(config Config, name string) (Table, bool) {
 	return Table{}, false
 }
 
-func purge_destination(config Config, dbDst *sql.DB) {
+func purgeTarget(config Config, dbDst *sql.DB) {
 
 	forcePurge := true
 	var table_list []string
@@ -65,12 +65,12 @@ func purge_destination(config Config, dbDst *sql.DB) {
 
 		log.Info(fmt.Sprintf("Clean table : %s (%s, %s)", t.Name, t.CleanMethod, t.Filter))
 
-		// Clean destination tables
+		// Clean target tables
 		switch t.CleanMethod {
 		case "append":
-			log.Debug("Do nothing on destination purge according to configuration")
+			log.Debug("Do nothing on target purge according to configuration")
 		case "delete":
-			_ = delete_data(t, forcePurge, dbDst)
+			_ = deleteData(t, forcePurge, dbDst)
 		default:
 			log.Debug("TRUNCATE TABLE according to default")
 			dst_query := "TRUNCATE " + table_name + ";"
@@ -86,7 +86,7 @@ func purge_destination(config Config, dbDst *sql.DB) {
 	}
 }
 
-func delete_data(t Table, forcePurge bool, dbDst *sql.DB) error {
+func deleteData(t Table, forcePurge bool, dbDst *sql.DB) error {
 	log.Debug(fmt.Sprintf("DELETE data from %s according to configuration", t.Name))
 	dst_query := fmt.Sprintf("DELETE FROM %s.%s", t.Schema, t.Name)
 	_, err := dbDst.Exec(dst_query)

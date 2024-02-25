@@ -20,8 +20,8 @@ func toolPat(nbRows int, nbCols int, colparam []string) string {
 			} else {
 				j = append(j, fmt.Sprintf("$%d", x))
 			}
-			c = c + 1
-			x = x + 1
+			c++
+			x++
 
 		}
 		a := strings.Join(j, ",")
@@ -29,7 +29,7 @@ func toolPat(nbRows int, nbCols int, colparam []string) string {
 
 		c = 0
 		j = []string{}
-		r = r + 1
+		r++
 	}
 
 	return strings.Join(i, ",")
