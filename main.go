@@ -50,6 +50,15 @@ var (
 func init() {
 	// Set default LogLevel to INFO
 	log.SetLevel(log.InfoLevel)
+
+	// Check if stdout is connected to a terminal
+	// If not remove colors in logs to be friendly
+	if !IsTerminal(os.Stdout) {
+		log.SetFormatter(&log.TextFormatter{
+			DisableColors: true,
+			FullTimestamp: true,
+		})
+	}
 }
 
 func main() {

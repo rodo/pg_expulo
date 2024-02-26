@@ -43,6 +43,7 @@ func toolPat(nbRows int, colparam []string) string {
 func flagParse() {
 	// Global variables
 	flag.BoolVar(&tryOnly, "try", false, "ROLLBACK everything on target. No data will be inserted")
+	flag.BoolVar(&tryOnly, "test", false, "Same as --try")
 
 	flag.BoolVar(&purgeOnly, "purge", false, "Only purge destination tables and exit, no data will be inserted")
 
@@ -63,4 +64,16 @@ func flagParse() {
 	if *debug {
 		log.SetLevel(log.DebugLevel)
 	}
+}
+
+// IsTerminal returns true if the file descriptor is connected to a terminal.
+func IsTerminal(f *os.File) bool {
+	// Get file descriptor information
+	fileInfo, err := f.Stat()
+	if err != nil {
+		return false
+	}
+
+	// Check if the file descriptor mode indicates it's a terminal
+	return (fileInfo.Mode() & os.ModeCharDevice) != 0
 }
