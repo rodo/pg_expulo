@@ -62,7 +62,6 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 	// Loop over all tables found in configuration file
 	for _, t := range OrderedTables {
 		tableFullname := fullTableName(t.Schema, t.Name)
-		table_name := t.Name
 
 		log.Info(fmt.Sprintf("%s : clean table (method:%s, filter:%s)", tableFullname, t.CleanMethod, t.Filter))
 
@@ -74,7 +73,7 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 			_ = deleteData(t, forcePurge, txDst)
 		default:
 			log.Debug("TRUNCATE TABLE according to default")
-			dst_query := "TRUNCATE " + table_name + ";"
+			dst_query := "TRUNCATE " + tableFullname + ";"
 			_, err := txDst.Exec(dst_query)
 			if err != nil {
 				if forcePurge {
