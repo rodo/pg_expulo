@@ -3,7 +3,6 @@ package main
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -42,35 +41,29 @@ type Column struct {
 }
 
 var (
-	Version = "0.0.2"
+	Version    = "0.0.2"
+	tryOnly    = false
+	purgeOnly  = false
+	configFile = "config.json"
 )
 
 func init() {
-	log.SetLevel(log.DebugLevel)
-	// log.SetLevel(log.InfoLevel)
+	// Set default LogLevel to INFO
+	log.SetLevel(log.InfoLevel)
 
-}
-
-func CheckFlags() (bool, bool, string) {
-
-	version := flag.Bool("version", false, "display version")
-	tryOnly := flag.Bool("try", false, "ROLLBACK everything on target. No data will be inserted")
-	purgeOnly := flag.Bool("purge", false, "Only purge destination tables and exit, no data will be inserted")
-	configFile := flag.String("config", "config.json", "Configuration file to use")
-
-	flag.Parse()
-
-	if *version {
-		fmt.Println(Version)
-		os.Exit(0)
+	// Check if stdout is connected to a terminal
+	// If not remove colors in logs to be friendly
+	if !IsTerminal(os.Stdout) {
+		log.SetFormatter(&log.TextFormatter{
+			DisableColors: true,
+			FullTimestamp: true,
+		})
 	}
-	return *purgeOnly, *tryOnly, *configFile
 }
 
 func main() {
-
-	// Command line flag
-	purgeOnly, tryOnly, configFile := CheckFlags()
+	// Parse command line arguments
+	flagParse()
 
 	// Read the configuration
 	config := readConfig(configFile)
