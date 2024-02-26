@@ -47,7 +47,11 @@
              },
              {
                  "name": "name",
-                 "generator": "md5"
+                 "generator": "fake_name"
+             },
+             {
+                 "name": "email",
+                 "generator": "fake_email"
              },
              {
                  "name": "age",

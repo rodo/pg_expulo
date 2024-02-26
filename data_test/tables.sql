@@ -19,10 +19,10 @@ CREATE TABLE boat (
 CREATE TABLE skipper (
   id serial primary key,
   name text,
+  email text,
   age int,
   created_at timestamp with time zone default now(),
-  updated_at timestamp without time zone,
-  price float default 4.5
+  updated_at timestamp without time zone
 );
 
 /* We sync only race with profile=public
@@ -32,7 +32,8 @@ CREATE TABLE race (
   id serial primary key,
   name text,
   year int,
-  profile text default 'private'
+  profile text default 'private',
+  rating float default 4.5
 );
 
 /* This table is never empty on destination

@@ -6,9 +6,10 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 )
 
-func get_dsn(host string, port string, user string, pass string, db string, version string) (string, string) {
+func getDsn(host string, port string, user string, pass string, db string, version string) (string, string) {
 
 	appname := "expulo_" + version
 
@@ -42,4 +43,21 @@ func fullname(schemaname string, datname string, attname string) string {
 
 func fullTableName(schemaname string, datname string) string {
 	return fmt.Sprintf("%s.%s", schemaname, datname)
+}
+
+func queryTableSource(dbSrc *sql.DB, query string) (*sql.Rows, []string) {
+
+	rows, err := dbSrc.Query(query)
+	log.Debug("Executing query : ", query)
+	if err != nil {
+		log.Fatal("Error executing query:", err)
+		os.Exit(1)
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		log.Fatal("Error getting column names:", err)
+	}
+
+	return rows, columns
 }

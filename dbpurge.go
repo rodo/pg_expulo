@@ -61,9 +61,10 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 
 	// Loop over all tables found in configuration file
 	for _, t := range OrderedTables {
+		tableFullname := fullTableName(t.Schema, t.Name)
 		table_name := t.Name
 
-		log.Info(fmt.Sprintf("Clean table : %s (%s, %s)", t.Name, t.CleanMethod, t.Filter))
+		log.Info(fmt.Sprintf("%s : clean table (method:%s, filter:%s)", tableFullname, t.CleanMethod, t.Filter))
 
 		// Clean target tables
 		switch t.CleanMethod {
