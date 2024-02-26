@@ -13,7 +13,11 @@
                  "generator": "randomInt"
              },
              {
-                 "name": "town",
+                 "name": "this_column_does_not_exists",
+                 "generator": "randomString"
+             },
+             {
+                 "name": "architect",
                  "generator": "randomString"
              }
          ]
@@ -47,11 +51,11 @@
              },
              {
                  "name": "name",
-                 "generator": "fake_name"
+                 "generator": "FakeName"
              },
              {
                  "name": "email",
-                 "generator": "fake_email"
+                 "generator": "FakeEmail"
              },
              {
                  "name": "age",

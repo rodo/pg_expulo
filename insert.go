@@ -31,7 +31,7 @@ func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, col
 		log.Debug("Error :", err)
 		log.Debug(destQuery)
 		log.Debug(allValues)
-		log.Fatal("Error during INSERT on :", tableFullname)
+		log.Fatal("Error during INSERT on : ", tableFullname)
 
 		return
 	}

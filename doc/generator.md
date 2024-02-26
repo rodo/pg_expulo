@@ -26,3 +26,15 @@ The md5 sum will be compute on the data source
 * sql
 
   A SQL function that return value
+
+* FakeEmail
+
+  Generate a fake email address, based on [Faker](https://pkg.go.dev/github.com/go-faker/faker/v4)
+
+* FakeFirstName
+
+  Generate a fake email address, based on [Faker](https://pkg.go.dev/github.com/go-faker/faker/v4)
+
+* FakeName
+
+  Generate a fake email address, based on [Faker](https://pkg.go.dev/github.com/go-faker/faker/v4)

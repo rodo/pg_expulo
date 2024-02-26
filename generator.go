@@ -47,16 +47,6 @@ func randomString() string {
 	return a.String
 }
 
-func fakeName() string {
-	name := faker.Name()
-	return name
-}
-
-func fakeEmail() string {
-	email := faker.Email()
-	return email
-}
-
 func mask() string {
 	return "********"
 }

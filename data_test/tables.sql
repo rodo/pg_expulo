@@ -13,7 +13,8 @@ CREATE TABLE boat (
   created_at timestamp with time zone default now(),
   updated_at timestamp without time zone,
   length integer,
-  class_code varchar(10)
+  class_code varchar(10),
+  architect text
 );
 
 CREATE TABLE skipper (
