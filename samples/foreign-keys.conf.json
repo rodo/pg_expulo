@@ -1,0 +1,19 @@
+{
+    "comment": "Sample file to test and validate complex foreign keys usescases",
+    "tables": [
+        {"name": "variety",
+         "schema": "sunset",
+         "clean": "truncate"
+        },
+        {"name": "fruits",
+         "schema": "sunset"
+        },
+        {"name": "classification",
+         "schema": "sunset"
+        },
+        {"name": "toplevel",
+         "schema": "sunset"
+        }
+    ]
+
+}
