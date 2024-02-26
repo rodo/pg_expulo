@@ -1,8 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"os"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func toolPat(nbRows int, colparam []string) string {
@@ -34,4 +38,29 @@ func toolPat(nbRows int, colparam []string) string {
 	}
 
 	return strings.Join(i, ",")
+}
+
+func flagParse() {
+	// Global variables
+	flag.BoolVar(&tryOnly, "try", false, "ROLLBACK everything on target. No data will be inserted")
+
+	flag.BoolVar(&purgeOnly, "purge", false, "Only purge destination tables and exit, no data will be inserted")
+
+	flag.StringVar(&configFile, "config", "config.json", "Configuration file to use")
+
+	// Local usage only
+	debug := flag.Bool("debug", false, "run in loglevel DEBUG")
+	version := flag.Bool("version", false, "display version")
+
+	// Parse flags
+	flag.Parse()
+
+	if *version {
+		fmt.Println(Version)
+		os.Exit(0)
+	}
+
+	if *debug {
+		log.SetLevel(log.DebugLevel)
+	}
 }
