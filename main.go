@@ -6,14 +6,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
-)
-
-var (
-	Version = "0.0.2"
 )
 
 // Config store the whole configuration read from json file
@@ -28,11 +24,12 @@ type Columns struct {
 
 // Table represent a table with her property in configuration file
 type Table struct {
-	Name        string   `json:"name"`
-	Columns     []Column `json:"columns"`
-	Schema      string   `json:"schema"`
-	CleanMethod string   `json:"clean"`
-	Filter      string   `json:"filter"`
+	Name           string   `json:"name"`
+	Columns        []Column `json:"columns"`
+	Schema         string   `json:"schema"`
+	CleanMethod    string   `json:"clean"`
+	Filter         string   `json:"filter"`
+	DeletionFilter string   `json:"deletion_filter"`
 }
 
 type Column struct {
@@ -44,9 +41,13 @@ type Column struct {
 	SQLFunction string `json:"function"`
 }
 
+var (
+	Version = "0.0.2"
+)
+
 func init() {
 	log.SetLevel(log.DebugLevel)
-	//	log.SetLevel(log.InfoLevel)
+	// log.SetLevel(log.InfoLevel)
 
 }
 
@@ -60,7 +61,6 @@ func CheckFlags() (bool, bool, string) {
 	flag.Parse()
 
 	if *version {
-
 		fmt.Println(Version)
 		os.Exit(0)
 	}
@@ -91,8 +91,8 @@ func main() {
 	dstDb := os.Getenv("PGDSTDATABASE")
 
 	// Construct connection string
-	conxSource, dsnSrc := get_dsn(srcHost, srcPort, srcUser, srcPass, srcDb, Version)
-	conxDestination, dsnDst := get_dsn(dstHost, dstPort, dstUser, dstPass, dstDb, Version)
+	conxSource, dsnSrc := getDsn(srcHost, srcPort, srcUser, srcPass, srcDb, Version)
+	conxDestination, dsnDst := getDsn(dstHost, dstPort, dstUser, dstPass, dstDb, Version)
 
 	// Connect to the database source
 	log.Debug("Connect on source")
@@ -119,6 +119,7 @@ func main() {
 
 	} else {
 
+		// Loop over all tables configured
 		for _, t := range config.Tables {
 			tableFullname := fullTableName(t.Schema, t.Name)
 
@@ -128,7 +129,10 @@ func main() {
 			if len(t.Filter) > 0 {
 				src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
 			}
-			doTables(dbSrc, txDst, t, src_query)
+			startTime := time.Now()
+			nbrows := doTable(dbSrc, txDst, t, src_query)
+			elapsedTime := time.Since(startTime)
+			log.Info(fmt.Sprintf("%s : inserted %d rows total in %s", tableFullname, nbrows, elapsedTime))
 		}
 	}
 
@@ -149,32 +153,26 @@ func main() {
 
 }
 
-func doTables(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) {
+func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) int {
 	tableFullname := fullTableName(t.Schema, t.Name)
 
-	rows, err := dbSrc.Query(src_query)
-	if err != nil {
-		fmt.Println("Error executing query:", err)
-		os.Exit(1)
-	}
-	defer rows.Close()
+	log.Info(fmt.Sprintf("%s : read data fom table", tableFullname))
 
-	columns, err := rows.Columns()
-	if err != nil {
-		fmt.Println("Error getting column names:", err)
-		return
-	}
+	rows, columns := queryTableSource(dbSrc, src_query)
+
 	var multirows [][]interface{}
+	lenColumns := len(columns)
 
 	count := 0
 	nbinsert := 0
 	var colnames []string
 	var colparam []string
+
 	for rows.Next() {
 		colnames = []string{}
 		count++
 		nbinsert++
-		cols := make([]interface{}, len(columns))
+		cols := make([]interface{}, lenColumns)
 
 		columnPointers := make([]interface{}, len(cols))
 
@@ -199,87 +197,22 @@ func doTables(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) {
 
 			// If the configuration ignore the column it won't be present
 			// in the INSERT statement
-			if cfvalue != "ignore" {
 
-				colnames = append(colnames, columns[i])
+			colvalue, colparam, nbcol, colnames = fillColumn(col, cfvalue, colvalue, colparam, nbcol, cols, colnames, i, columns)
 
-				// Assign the target value
-				switch cfvalue {
-				case "null":
-					colvalue = append(colvalue, nil)
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				case "mask":
-					colvalue = append(colvalue, mask())
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				case "randomInt":
-					colvalue = append(colvalue, randomInt())
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				case "randomIntMinMax":
-					colvalue = append(colvalue, randomIntMinMax(col.Min, col.Max))
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				case "randomFloat":
-					colvalue = append(colvalue, randomFloat())
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				case "randomString":
-					colvalue = append(colvalue, randomString())
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				case "md5":
-					colvalue = append(colvalue, md5signature(fmt.Sprintf("%v", cols[i])))
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				case "randomTimeTZ":
-					colvalue = append(colvalue, randomTimeTZ(col.Timezone))
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				case "sql":
-					nbcol--
-					colparam = append(colparam, col.SQLFunction)
-				default:
-					colvalue = append(colvalue, cols[i])
-					colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
-				}
-				nbcol++
-			}
 		}
 
 		// INSERT
 		multirows = append(multirows, colvalue)
 
-		if nbinsert > 9 {
-			log.Debug(fmt.Sprintf("Insert %d rows in table ", nbinsert))
+		batch_size := 1000
+		if nbinsert > batch_size-1 {
+			log.Debug(fmt.Sprintf("Insert %d rows in table %s", nbinsert, t.Name))
 			nbinsert = 0
 			insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
 			multirows = multirows[:0]
 		}
 	}
 	insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
-	log.Debug(fmt.Sprintf("Inserted %d rows in table %s", count, t.Name))
-
-}
-
-func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, colparam []string, multirows [][]interface{}) {
-	col_names := strings.Join(colnames, ",")
-
-	nbColumns := len(colnames)
-	nbRows := len(multirows)
-
-	pat := toolPat(nbRows, nbColumns, colparam)
-
-	// log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
-
-	var allValues []interface{}
-	for _, row := range multirows {
-		// Append each element of the row to allValues
-		allValues = append(allValues, row...)
-	}
-
-	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableFullname, col_names, pat)
-
-	_, err := dbDst.Exec(destQuery, allValues...)
-	if err != nil {
-		log.Debug("Error during INSERT on :", err)
-		log.Debug(destQuery)
-		log.Debug(allValues)
-		log.Fatal("Error during INSERT on :", tableFullname)
-
-		return
-	}
+	return count
 }

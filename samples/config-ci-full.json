@@ -13,7 +13,11 @@
                  "generator": "randomInt"
              },
              {
-                 "name": "town",
+                 "name": "this_column_does_not_exists",
+                 "generator": "randomString"
+             },
+             {
+                 "name": "architect",
                  "generator": "randomString"
              }
          ]
@@ -47,7 +51,11 @@
              },
              {
                  "name": "name",
-                 "generator": "md5"
+                 "generator": "FakeName"
+             },
+             {
+                 "name": "email",
+                 "generator": "FakeEmail"
              },
              {
                  "name": "age",
@@ -61,7 +69,16 @@
                  "function": "now()"
              }
          ]
-        }
+        },
+        {"schema": "public",
+         "name": "town",
+         "clean": "delete",
+         "deletion_filter": "area != 'South'"},
+        {"schema": "linked", "name": "root", "clean": "delete"},
+        {"schema": "linked", "name": "sheetone", "clean": "delete"},
+        {"schema": "linked", "name": "sheettwo", "clean": "delete"},
+        {"schema": "linked", "name": "sheetthree", "clean": "delete"},
+        {"name": "fish", "schema": "linked", "clean": "delete"}
     ]
 
 }

@@ -34,12 +34,12 @@ func randomFloat64() float64 {
 	return rand.Float64()
 }
 
-type SomeStruct struct {
+type someStruct struct {
 	String string
 }
 
 func randomString() string {
-	a := SomeStruct{}
+	a := someStruct{}
 	err := faker.FakeData(&a)
 	if err != nil {
 		fmt.Println(err)

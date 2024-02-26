@@ -5,29 +5,30 @@ import (
 	"strings"
 )
 
-func toolPat(nbRows int, nbCols int, colparam []string) string {
+func toolPat(nbRows int, colparam []string) string {
 	x := 1
 	r := 0
 
 	var i []string
 	var j []string
-	c := 0
-	for r < nbRows {
-		for c < nbCols {
+	var c int
+	var d int
 
-			if colparam[c] != fmt.Sprintf("$%d", c+1) {
+	for r < nbRows {
+		c = 0
+		d = 1
+		for c < len(colparam) {
+			if colparam[c] != fmt.Sprintf("$%d", d) {
 				j = append(j, colparam[c])
 			} else {
 				j = append(j, fmt.Sprintf("$%d", x))
+				x++
+				d++
 			}
 			c++
-			x++
-
 		}
 		a := strings.Join(j, ",")
 		i = append(i, fmt.Sprintf("(%s)", a))
-
-		c = 0
 		j = []string{}
 		r++
 	}

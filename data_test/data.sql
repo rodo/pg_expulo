@@ -12,9 +12,22 @@ INSERT INTO boat (name, updated_at) VALUES ('Pen Duick II', now());
 INSERT INTO boat (name) VALUES ('Pen Duick III');
 INSERT INTO boat (name) VALUES ('Pen Duick IV');
 
-INSERT INTO skipper (name) VALUES ('Eric Tabarly');
+-- 10 skippers
+-- 1 with email
+--
+INSERT INTO skipper (name, email) VALUES ('Eric Tabarly', 'eric@tabarly.domain');
+INSERT INTO skipper (name) VALUES ('Florence Arthaud'), ('Catherine Chabaud');
+INSERT INTO skipper (name) VALUES ('Loïck Peyron');
+
+PREPARE plan AS INSERT INTO skipper (name, updated_at)
+VALUES ($1, now() ), ($2, now() ), ($3, now() );
+EXECUTE plan('Guirec Soudée', 'Loïck Peyron',    'Damien Seguin');
+EXECUTE plan('Anne Caseneuve','Clarisse Crémer', 'Ellen MacArthur');
 
 
+-- 55 results
+--
+--
 INSERT INTO results (year) SELECT generate_series(1960, 2014, 1);
 
 INSERT INTO cheater VALUES (DEFAULT);
@@ -38,3 +51,7 @@ INSERT INTO linked.sheetone (name) VALUES ('two');
 INSERT INTO linked.sheettwo (name) VALUES ('one');
 INSERT INTO linked.sheetthree (name) VALUES ('one');
 INSERT INTO linked.fish (aname, bname) VALUES ('one', 'one');
+--
+-- we sync only rows with area=North
+-- data for other area exists on target
+INSERT INTO town (name, area) VALUES ('Brest', 'North');
