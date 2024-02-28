@@ -40,6 +40,13 @@ type Column struct {
 	SQLFunction string `json:"function"`
 }
 
+// Table represent a table with her property in configuration file
+type TriggerConstraint struct {
+	TableFullName  string
+	TriggerName    string
+	ConstraintName string
+}
+
 var (
 	Version    = "0.0.2"
 	tryOnly    = false
@@ -103,30 +110,52 @@ func main() {
 		log.Fatal("Error starting transaction: ", err)
 	}
 
+	// Build an Array with all table names in fullname form
+	var tableList []string
+	for _, t := range config.Tables {
+		tableList = append(tableList, fullTableName(t.Schema, t.Name))
+	}
+
+	log.Debug("tableList contains : ", tableList)
+
+	// Read the foreign keys
+	var triggerConstraints []TriggerConstraint
+	triggerConstraints = GetTriggerConstraints(dbDst, tableList)
+
 	// Delete data on destination tables
+	DisableTriggerConstraints(dbDst, triggerConstraints)
 	purgeTarget(config, txDst)
+	// EnableTriggerConstraints(dbDst, triggerConstraints)
 
 	// if command line parameter set do purge and exit
 	if purgeOnly == true {
 		log.Debug("Exit on option, purge")
+		os.Exit(0)
+	}
 
-	} else {
+	// List all tables in insert order
+	for _, t := range config.Tables {
+		tableFullname := fullTableName(t.Schema, t.Name)
+		log.Debug(fmt.Sprintf("Will insert in : %s", tableFullname))
+	}
 
-		// Loop over all tables configured
-		for _, t := range config.Tables {
-			tableFullname := fullTableName(t.Schema, t.Name)
+	// Loop over all tables configured
+	// for _, t := range OrderedTables {
 
-			src_query := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
+	for _, t := range config.Tables {
+		tableFullname := fullTableName(t.Schema, t.Name)
 
-			// Filter the data on source to fetch a subset of rows in a table
-			if len(t.Filter) > 0 {
-				src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
-			}
-			startTime := time.Now()
-			nbrows := doTable(dbSrc, txDst, t, src_query)
-			elapsedTime := time.Since(startTime)
-			log.Info(fmt.Sprintf("%s : inserted %d rows total in %s", tableFullname, nbrows, elapsedTime))
+		src_query := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
+
+		// Filter the data on source to fetch a subset of rows in a table
+		if len(t.Filter) > 0 {
+			src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
 		}
+		startTime := time.Now()
+		nbrows, _ := doTable(dbSrc, txDst, t, src_query)
+		elapsedTime := time.Since(startTime)
+		log.Info(fmt.Sprintf("%s : inserted %d rows total in %s", tableFullname, nbrows, elapsedTime))
+
 	}
 
 	if tryOnly {
@@ -143,10 +172,10 @@ func main() {
 			log.Info("Commit on target")
 		}
 	}
-
+	log.Info("Thank you for using pg_expulo")
 }
 
-func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) int {
+func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, string) {
 	tableFullname := fullTableName(t.Schema, t.Name)
 
 	log.Info(fmt.Sprintf("%s : read data fom table", tableFullname))
@@ -158,6 +187,7 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) int {
 
 	count := 0
 	nbinsert := 0
+	var errCode string
 	var colnames []string
 	var colparam []string
 
@@ -202,10 +232,14 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) int {
 		if nbinsert > batch_size-1 {
 			log.Debug(fmt.Sprintf("Insert %d rows in table %s", nbinsert, t.Name))
 			nbinsert = 0
-			insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
+			_, errCode = insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
 			multirows = multirows[:0]
 		}
 	}
-	insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
-	return count
+	_, errCode = insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
+	return count, errCode
+}
+
+func RemoveAtIndex(slice []Table, index int) []Table {
+	return append(slice[:index], slice[index+1:]...)
 }

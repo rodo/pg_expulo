@@ -42,12 +42,12 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 	forcePurge := true
 	var table_list []string
 	var OrderedTables []Table
-	// Order table depending on foreign keys
+	// Order tables depending on foreign keys
 	for _, t := range config.Tables {
 		table_list = append(table_list, fullTableName(t.Schema, t.Name))
 	}
 
-	for _, tname := range OrderTableList(table_list, txDst) {
+	for _, tname := range getOrderTableList(table_list, txDst) {
 		// table_list = append(table_list, fmt.Sprintf("%s.%s", t.Schema, t.Name))
 		t, found := getTableByFullName(config, tname)
 		if found {
@@ -55,6 +55,7 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 		}
 	}
 
+	// List all tables in purge order
 	for _, t := range OrderedTables {
 		log.Debug(fmt.Sprintf("Will clean table : %s.%s with %s", t.Schema, t.Name, t.CleanMethod))
 	}
@@ -125,7 +126,7 @@ func deleteData(t Table, forcePurge bool, txDst *sql.Tx) error {
 // pointing to them
 // The order is not perfect as it is based on numer of foreign keys
 // it's a first step
-func OrderTableList(table_list []string, txDst *sql.Tx) []string {
+func getOrderTableList(table_list []string, txDst *sql.Tx) []string {
 
 	var pkName string
 	var nb_fk int

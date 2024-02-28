@@ -3,16 +3,19 @@
     "tables": [
         {"name": "variety",
          "schema": "sunset",
-         "clean": "truncate"
+         "clean": "delete"
         },
-        {"name": "fruits",
-         "schema": "sunset"
+        {"name": "fruit",
+         "schema": "sunset",
+         "clean": "delete"
         },
         {"name": "classification",
-         "schema": "sunset"
+         "schema": "sunset",
+         "clean": "delete"
         },
         {"name": "toplevel",
-         "schema": "sunset"
+         "schema": "sunset",
+         "clean": "delete"
         }
     ]
 

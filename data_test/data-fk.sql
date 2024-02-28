@@ -36,3 +36,7 @@ CREATE TABLE sunset.toplevel (id int PRIMARY KEY, name text);
 INSERT INTO sunset.toplevel VALUES (1, 'Level 1'),(2, 'Level 2'),(3, 'Level 3');
 ALTER TABLE sunset.classification ADD COLUMN levelid int REFERENCES sunset.toplevel(id);
 UPDATE sunset.classification SET levelid = 2;
+
+
+CREATE TABLE sunset.secondlevel (id int PRIMARY KEY, name text,
+topid int REFERENCES sunset.toplevel(id));
