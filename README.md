@@ -6,7 +6,7 @@ statements run on **destination**
 
 ## Usage
 
-The two connections strings are build from env variables, you need at leas these 10
+The two connections strings are build from env variables, you need at least these 10 variables
 
     export PGSRCHOST=localhost
     export PGSRCPORT=5432
