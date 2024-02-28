@@ -1,5 +1,6 @@
 .PHONY: test clean
 
+
 bin/pg_expulo:
 	go build -o $@
 
