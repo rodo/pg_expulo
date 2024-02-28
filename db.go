@@ -14,7 +14,21 @@ import (
 //go:embed sql/fetch_table_foreign_keys.sql
 var qry_fetch_table_foreign_keys string
 
-// Disable a trigger on database
+// Restart a value
+func ResetSeq(dbConn *sql.Tx, seq string, newvalue int64) {
+	query := "ALTER SEQUENCE %s RESTART WITH %d"
+
+	qry := fmt.Sprintf(query, seq, newvalue+1)
+
+	log.Debug(qry)
+
+	_, err := dbConn.Exec(qry)
+	if err != nil {
+		log.Fatal("Error executing query in GetSeqLastValue:", err)
+	}
+}
+
+// Retreive the last used value in a sequence
 func GetSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
 	var err error
 

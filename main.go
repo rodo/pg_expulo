@@ -191,6 +191,7 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 
 	// TODO move this code in another part
 	lastValue, _ := GetSeqLastValue(txDst, "sunset.root_id_seq")
+	lastValueUsed := lastValue
 
 	for rows.Next() {
 		colnames = []string{}
@@ -208,7 +209,7 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 		nbcol := 1
 		colparam = []string{}
 		var colvalue []interface{}
-
+		x := int64(0)
 		// Manage what we do it data here
 		for i, _ := range cols {
 			cfvalue := "notfound"
@@ -222,8 +223,10 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 			// If the configuration ignore the column it won't be present
 			// in the INSERT statement
 
-			colvalue, colparam, nbcol, colnames = FillColumn(col, cfvalue, colvalue, colparam, nbcol, cols, colnames, i, columns, lastValue)
-
+			colvalue, colparam, nbcol, colnames, x = FillColumn(col, cfvalue, colvalue, colparam, nbcol, cols, colnames, i, columns, lastValue)
+			if x > 0 {
+				lastValueUsed = x
+			}
 		}
 
 		// INSERT
@@ -237,6 +240,12 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 			multirows = multirows[:0]
 		}
 	}
+
+	log.Debug(fmt.Sprintf("Insert %d > %d ", lastValueUsed, lastValue))
+	if lastValueUsed > lastValue {
+		ResetSeq(txDst, "sunset.root_id_seq", lastValueUsed)
+	}
+
 	_, errCode = insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
 	return count, errCode
 }

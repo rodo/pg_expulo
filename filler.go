@@ -13,11 +13,13 @@ func (R) FakeEmail() string     { return faker.Email() }
 func (R) FakeName() string      { return faker.Name() }
 func (R) FakeFirstName() string { return faker.FirstName() }
 
-func FillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, lastvalue int64) ([]interface{}, []string, int, []string) {
+func FillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, lastvalue int64) ([]interface{}, []string, int, []string, int64) {
+
+	x := int64(0)
 
 	// The column is ignored in configuration
 	if cfvalue == "ignore" {
-		return colvalue, colparam, nbcol, colnames
+		return colvalue, colparam, nbcol, colnames, x
 	}
 
 	// The column is NOT ignored in configuration
@@ -34,15 +36,18 @@ func FillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []s
 
 		nbcol++
 
-		return colvalue, colparam, nbcol, colnames
+		return colvalue, colparam, nbcol, colnames, x
 	}
 
 	// Assign the target value
 	switch cfvalue {
 	case "serial":
 		// Set the column with NULL values
-		x := cols[i].(int64)
-		colvalue = append(colvalue, x+lastvalue)
+		if val, ok := cols[i].(int64); ok {
+			// If it is, perform the addition
+			x = val + lastvalue
+		}
+		colvalue = append(colvalue, x)
 		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 
 	case "null":
@@ -79,6 +84,5 @@ func FillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []s
 	}
 	nbcol++
 
-	return colvalue, colparam, nbcol, colnames
-
+	return colvalue, colparam, nbcol, colnames, x
 }
