@@ -14,6 +14,40 @@ import (
 //go:embed sql/fetch_table_foreign_keys.sql
 var qry_fetch_table_foreign_keys string
 
+// Disable a trigger on database
+func GetSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
+	var err error
+
+	query := "SELECT last_value FROM %s"
+
+	var last_value int64
+	last_value = 0
+
+	qry := fmt.Sprintf(query, seq)
+
+	log.Debug(qry)
+
+	rows, err := dbConn.Query(qry)
+	if err != nil {
+		log.Fatal("Error executing query in GetSeqLastValue:", err)
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&last_value)
+		if err != nil {
+			log.Fatal("Error on row", err)
+		}
+		log.Debug(fmt.Sprintf("row values : %s %d", seq, last_value))
+
+	}
+	if err = rows.Err(); err != nil {
+		log.Fatal("Error reading rows :", err)
+	}
+	rows.Close()
+
+	return last_value, err
+}
+
 func getDsn(host string, port string, user string, pass string, db string, version string) (string, string) {
 
 	appname := "expulo_" + version

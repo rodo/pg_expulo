@@ -32,12 +32,13 @@ type Table struct {
 }
 
 type Column struct {
-	Name        string `json:"name"`
-	Generator   string `json:"generator"`
-	Min         int    `json:"min"`
-	Max         int    `json:"max"`
-	Timezone    string `json:"timezone"`
-	SQLFunction string `json:"function"`
+	Name         string `json:"name"`
+	Generator    string `json:"generator"`
+	Min          int    `json:"min"`
+	Max          int    `json:"max"`
+	Timezone     string `json:"timezone"`
+	SQLFunction  string `json:"function"`
+	SeqLastValue int
 }
 
 // Table represent a table with her property in configuration file
@@ -188,6 +189,9 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 	var colnames []string
 	var colparam []string
 
+	// TODO move this code in another part
+	lastValue, _ := GetSeqLastValue(txDst, "sunset.root_id_seq")
+
 	for rows.Next() {
 		colnames = []string{}
 		count++
@@ -218,7 +222,7 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 			// If the configuration ignore the column it won't be present
 			// in the INSERT statement
 
-			colvalue, colparam, nbcol, colnames = fillColumn(col, cfvalue, colvalue, colparam, nbcol, cols, colnames, i, columns)
+			colvalue, colparam, nbcol, colnames = FillColumn(col, cfvalue, colvalue, colparam, nbcol, cols, colnames, i, columns, lastValue)
 
 		}
 

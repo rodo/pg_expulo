@@ -3,7 +3,8 @@
     "tables": [
         {"name": "variety",
          "schema": "sunset",
-         "clean": "delete"
+         "clean": "delete",
+         "comment": "You can add comment on your table"
         },
         {"name": "fruit",
          "schema": "sunset",
@@ -16,6 +17,13 @@
         {"name": "toplevel",
          "schema": "sunset",
          "clean": "delete"
+        },
+        {"name": "root",
+         "schema": "sunset",
+         "clean": "append",
+         "columns": [{ "name": "id", "generator": "serial"},
+                     { "name": "name", "generator": "FakeName" }]
+
         }
     ]
 

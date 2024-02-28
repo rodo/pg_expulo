@@ -13,7 +13,7 @@ func (R) FakeEmail() string     { return faker.Email() }
 func (R) FakeName() string      { return faker.Name() }
 func (R) FakeFirstName() string { return faker.FirstName() }
 
-func fillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string) ([]interface{}, []string, int, []string) {
+func FillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, lastvalue int64) ([]interface{}, []string, int, []string) {
 
 	// The column is ignored in configuration
 	if cfvalue == "ignore" {
@@ -39,7 +39,14 @@ func fillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []s
 
 	// Assign the target value
 	switch cfvalue {
+	case "serial":
+		// Set the column with NULL values
+		x := cols[i].(int64)
+		colvalue = append(colvalue, x+lastvalue)
+		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+
 	case "null":
+		// Set the column with NULL values
 		colvalue = append(colvalue, nil)
 		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 	case "mask":
