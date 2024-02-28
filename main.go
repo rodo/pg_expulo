@@ -43,7 +43,6 @@ type Column struct {
 // Table represent a table with her property in configuration file
 type TriggerConstraint struct {
 	TableFullName  string
-	TriggerName    string
 	ConstraintName string
 }
 
@@ -119,17 +118,17 @@ func main() {
 	log.Debug("tableList contains : ", tableList)
 
 	// Read the foreign keys
-	var triggerConstraints []TriggerConstraint
-	triggerConstraints = GetTriggerConstraints(dbDst, tableList)
+	triggerConstraints := GetTriggerConstraints(dbDst, tableList)
 
 	// Delete data on destination tables
-	DisableTriggerConstraints(dbDst, triggerConstraints)
+	DeferForeignKeys(dbDst, triggerConstraints)
 	purgeTarget(config, txDst)
-	// EnableTriggerConstraints(dbDst, triggerConstraints)
 
 	// if command line parameter set do purge and exit
 	if purgeOnly == true {
 		log.Debug("Exit on option, purge")
+		CloseTx(txDst, tryOnly)
+		ReactivateForeignKeys(dbDst, triggerConstraints)
 		os.Exit(0)
 	}
 
@@ -140,8 +139,6 @@ func main() {
 	}
 
 	// Loop over all tables configured
-	// for _, t := range OrderedTables {
-
 	for _, t := range config.Tables {
 		tableFullname := fullTableName(t.Schema, t.Name)
 

@@ -11,14 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//go:embed sql/fetch_trigger_constraints.sql
-var qry_fetch_trigger_constraints string
-
-//go:embed sql/disable_trigger.sql
-var qry_disable_trigger string
-
-//go:embed sql/enable_trigger.sql
-var qry_enable_trigger string
+//go:embed sql/fetch_table_foreign_keys.sql
+var qry_fetch_table_foreign_keys string
 
 func getDsn(host string, port string, user string, pass string, db string, version string) (string, string) {
 
@@ -80,76 +74,92 @@ func GetTriggerConstraints(dbConn *sql.DB, tbFullnames []string) []TriggerConstr
 
 	log.Debug("filter : ", filter)
 
-	rows, err := dbConn.Query(qry_fetch_trigger_constraints, filter)
+	rows, err := dbConn.Query(qry_fetch_table_foreign_keys, filter)
 	if err != nil {
-		log.Fatal("Error executing query:", err)
+		log.Fatal("Error executing query in GetTriggerConstraints:", err)
 	}
 
-	//	var tableFullname string
-	//	var triggerName string
-	//	var connName string
 	var trgCons []TriggerConstraint
 	var trx TriggerConstraint
 
 	for rows.Next() {
-		log.Debug(rows)
-		rows.Scan(&trx.TableFullName, &trx.ConstraintName, &trx.TriggerName)
-		log.Debug(fmt.Sprintf("%s", trx.TriggerName))
+		err = rows.Scan(&trx.TableFullName, &trx.ConstraintName)
+		if err != nil {
+			log.Fatal("Error on row", err)
+		}
+		log.Debug(fmt.Sprintf("row values : %s %s", trx.TableFullName, trx.ConstraintName))
 
 		trgCons = append(trgCons, trx)
-		log.Debug(trx)
 	}
+	if err = rows.Err(); err != nil {
+		log.Fatal("Error reading rows :", err)
+	}
+	rows.Close()
 
 	return trgCons
 }
 
 // Disable all triggers on database
-func DisableTriggerConstraints(dbConn *sql.DB, triggers []TriggerConstraint) error {
+func DeferForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
 
 	var err error
-	for _, t := range triggers {
 
-		err = DisableTrigger(dbConn, t.TableFullName, t.ConstraintName)
+	qry := "ALTER TABLE %s ALTER CONSTRAINT %s INITIALLY DEFERRED"
+
+	for _, t := range triggers {
+		err = AlterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
+	}
+
+	return err
+}
+
+// Reactivate all foreign keys
+func ReactivateForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
+
+	var err error
+
+	qry := "ALTER TABLE %s ALTER CONSTRAINT %s NOT DEFERRABLE"
+
+	for _, t := range triggers {
+		err = AlterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
 	}
 
 	return err
 }
 
 // Disable a trigger on database
-func DisableTrigger(dbConn *sql.DB, tableFullname string, triggerName string) error {
-	log.Debug(fmt.Sprintf("%s DISABLE TRIGGER %s : ", tableFullname, triggerName))
-
-	qry := fmt.Sprintf("ALTER TABLE %s ALTER CONSTRAINT %s DEFERRABLE", tableFullname, triggerName)
-
-	// _, err := dbConn.Exec(qry_disable_trigger, tableFullname, triggerName)
-	_, err := dbConn.Exec(qry)
-	if err != nil {
-		log.Debug(qry)
-		log.Fatal("Error executing query:", err)
-	}
-
-	return err
-}
-
-// Enable all triggers on database
-func EnableTriggerConstraints(dbConn *sql.DB, triggers []TriggerConstraint) error {
-
+func AlterForeignKey(dbConn *sql.DB, queryDef string, tablename string, fkName string) error {
 	var err error
 
-	for _, t := range triggers {
-		err = EnableTrigger(dbConn, t.TableFullName, t.TriggerName)
+	qry := fmt.Sprintf(queryDef, tablename, fkName)
+
+	log.Debug(qry)
+
+	_, err = dbConn.Exec(qry)
+	if err != nil {
+		log.Fatal("Error executing query in DeferForeignKey:", err)
 	}
 
 	return err
 }
 
-// Enable a trigger on database
-func EnableTrigger(dbConn *sql.DB, tableFullname string, triggerName string) error {
-	log.Debug(fmt.Sprintf("%s ENABLE TRIGGER %s : ", tableFullname, triggerName))
-	_, err := dbConn.Exec(qry_enable_trigger, tableFullname, triggerName)
-	if err != nil {
-		log.Fatal("Error executing query:", err)
-	}
+// Commit or Roll back an open transaction
+func CloseTx(tx *sql.Tx, tryOnly bool) string {
 
-	return err
+	if tryOnly {
+		// Rollback the transaction on target as requested
+		if err := tx.Rollback(); err != nil {
+			log.Fatal("Error committing transaction: ", err)
+		}
+		log.Info("Rollback on target")
+		return "rollback"
+	} else {
+		// Commit the transaction on target if all queries succeed
+		if err := tx.Commit(); err != nil {
+			log.Fatal("Error committing transaction: ", err)
+		} else {
+			log.Info("Commit on target")
+		}
+		return "commit"
+	}
 }
