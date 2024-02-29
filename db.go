@@ -14,13 +14,22 @@ import (
 //go:embed sql/fetch_table_foreign_keys.sql
 var qry_fetch_table_foreign_keys string
 
-// Restart a value
-func ResetSeq(dbConn *sql.Tx, seq string, newvalue int64) {
+// Restart all the sequences
+func ResetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
+	for _, s := range *sequences {
+		if s.LastValueUsed > s.InitialValue {
+			ResetSeq(dbConn, s.SequenceName, s.LastValueUsed)
+		}
+	}
+}
+
+// Restart a sequence with a new value
+func ResetSeq(dbConn *sql.DB, seq string, newvalue int64) {
 	query := "ALTER SEQUENCE %s RESTART WITH %d"
 
-	qry := fmt.Sprintf(query, seq, newvalue+1)
+	qry := fmt.Sprintf(query, seq, newvalue)
 
-	log.Debug(qry)
+	log.Debug(fmt.Sprintf("Restart sequence %s with value %d", seq, newvalue))
 
 	_, err := dbConn.Exec(qry)
 	if err != nil {
@@ -129,9 +138,14 @@ func GetTriggerConstraints(dbConn *sql.DB, tbFullnames []string) []TriggerConstr
 
 	var trgCons []TriggerConstraint
 	var trx TriggerConstraint
+	var tableTarget string
+	// The id of the column on pg_attribute
+	var conid int
+	// The id of the column referenced on pg_attribute
+	var confid int
 
 	for rows.Next() {
-		err = rows.Scan(&trx.TableFullName, &trx.ConstraintName)
+		err = rows.Scan(&trx.TableFullName, &tableTarget, &trx.ConstraintName, &conid, &confid)
 		if err != nil {
 			log.Fatal("Error on row", err)
 		}
@@ -210,4 +224,44 @@ func CloseTx(tx *sql.Tx, tryOnly bool) string {
 		}
 		return "commit"
 	}
+}
+
+//go:embed sql/fetch_sequences.sql
+var qry_fetch_sequences string
+
+// Read the informations sequences from database
+// Retreive the last used value in a sequence
+func GetSequencesInfo(dbConn *sql.DB) ([]Sequence, map[string]Sequence) {
+	var err error
+	var sequences []Sequence
+
+	rows, err := dbConn.Query(qry_fetch_sequences)
+	if err != nil {
+		log.Fatal("Error executing query in GetSequencesInfo:", err)
+	}
+
+	for rows.Next() {
+		var s = Sequence{}
+		err = rows.Scan(&s.TableName, &s.ColumnName, &s.SequenceName, &s.InitialValue, &s.LastValue, &s.ColumnPosition)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("Error on row in GetSequencesInfo %s", err))
+		}
+		sequences = append(sequences, s)
+
+	}
+	if err = rows.Err(); err != nil {
+		log.Fatal("Error reading rows :", err)
+	}
+	rows.Close()
+
+	log.Debug(fmt.Sprintf("Found %d sequence(s) defined in database", len(sequences)))
+
+	mapSeq := make(map[string]Sequence)
+
+	for _, seqX := range sequences {
+		mapSeq[seqX.SequenceName] = seqX
+	}
+
+	// TODO refacto this part and return only a map instead of two
+	return sequences, mapSeq
 }

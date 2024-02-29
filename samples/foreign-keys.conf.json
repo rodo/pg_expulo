@@ -21,8 +21,8 @@
         {"name": "root",
          "schema": "sunset",
          "clean": "append",
-         "columns": [{ "name": "id", "generator": "serial"},
-                     { "name": "name", "generator": "FakeName" }]
+         "columns": [{ "name": "fooid", "generator": "serial"},
+                     { "name": "fooname", "generator": "FakeName" }]
 
         }
     ]

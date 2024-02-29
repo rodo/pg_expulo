@@ -23,7 +23,8 @@ type Columns struct {
 
 // Table represent a table with her property in configuration file
 type Table struct {
-	Name           string   `json:"name"`
+	Name           string `json:"name"`
+	FullName       string
 	Columns        []Column `json:"columns"`
 	Schema         string   `json:"schema"`
 	CleanMethod    string   `json:"clean"`
@@ -38,7 +39,18 @@ type Column struct {
 	Max          int    `json:"max"`
 	Timezone     string `json:"timezone"`
 	SQLFunction  string `json:"function"`
-	SeqLastValue int
+	SequenceName string
+	SeqLastValue int64
+}
+
+type Sequence struct {
+	TableName      string
+	ColumnName     string
+	SequenceName   string
+	LastValue      int
+	ColumnPosition int
+	InitialValue   int64
+	LastValueUsed  int64
 }
 
 // Table represent a table with her property in configuration file
@@ -104,6 +116,10 @@ func main() {
 	dbDst := connectDb(conxDestination)
 	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
 
+	// Extend the configuration with information at schema level in database
+	sequencesArr, sequencesMap := GetSequencesInfo(dbDst)
+	config = GetInfoFromDatabases(config, sequencesArr)
+
 	// Start a transaction
 	txDst, err := dbDst.Begin()
 	if err != nil {
@@ -150,7 +166,7 @@ func main() {
 			src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
 		}
 		startTime := time.Now()
-		nbrows, _ := doTable(dbSrc, txDst, t, src_query)
+		nbrows, _ := doTable(dbSrc, dbDst, txDst, t, src_query, &sequencesMap)
 		elapsedTime := time.Since(startTime)
 		log.Info(fmt.Sprintf("%s : inserted %d rows total in %s", tableFullname, nbrows, elapsedTime))
 
@@ -173,7 +189,7 @@ func main() {
 	log.Info("Thank you for using pg_expulo")
 }
 
-func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, string) {
+func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, src_query string, sequencesMap *map[string]Sequence) (int, string) {
 	tableFullname := fullTableName(t.Schema, t.Name)
 
 	log.Info(fmt.Sprintf("%s : read data fom table", tableFullname))
@@ -189,16 +205,13 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 	var colnames []string
 	var colparam []string
 
-	// TODO move this code in another part
-	lastValue, _ := GetSeqLastValue(txDst, "sunset.root_id_seq")
-	lastValueUsed := lastValue
-
 	for rows.Next() {
+		// Reset and increase value at first
 		colnames = []string{}
 		count++
 		nbinsert++
+		nbColumnModified := 1
 		cols := make([]interface{}, lenColumns)
-
 		columnPointers := make([]interface{}, len(cols))
 
 		for i, _ := range cols {
@@ -206,10 +219,10 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 
 		}
 		rows.Scan(columnPointers...)
-		nbcol := 1
+
 		colparam = []string{}
-		var colvalue []interface{}
-		x := int64(0)
+		var colValues []interface{}
+
 		// Manage what we do it data here
 		for i, _ := range cols {
 			cfvalue := "notfound"
@@ -223,14 +236,12 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 			// If the configuration ignore the column it won't be present
 			// in the INSERT statement
 
-			colvalue, colparam, nbcol, colnames, x = FillColumn(col, cfvalue, colvalue, colparam, nbcol, cols, colnames, i, columns, lastValue)
-			if x > 0 {
-				lastValueUsed = x
-			}
+			colValues, colparam, nbColumnModified, colnames = FillColumn(col, cfvalue, colValues, colparam, nbColumnModified, cols, colnames, i, columns, sequencesMap)
+
 		}
 
 		// INSERT
-		multirows = append(multirows, colvalue)
+		multirows = append(multirows, colValues)
 
 		batch_size := 1000
 		if nbinsert > batch_size-1 {
@@ -240,13 +251,11 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) (int, stri
 			multirows = multirows[:0]
 		}
 	}
-
-	log.Debug(fmt.Sprintf("Insert %d > %d ", lastValueUsed, lastValue))
-	if lastValueUsed > lastValue {
-		ResetSeq(txDst, "sunset.root_id_seq", lastValueUsed)
-	}
-
 	_, errCode = insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
+
+	// Restarting sequences
+	ResetAllSequences(dbDst, sequencesMap)
+
 	return count, errCode
 }
 

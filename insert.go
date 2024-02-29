@@ -16,8 +16,8 @@ func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, col
 
 	nbRows := len(multirows)
 	var errCode string
-	pat := toolPat(nbRows, colparam)
-
+	var pat string
+	pat = toolPat(nbRows, colparam)
 	// log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
 
 	var allValues []interface{}
