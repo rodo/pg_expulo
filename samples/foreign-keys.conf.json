@@ -1,0 +1,30 @@
+{
+    "comment": "Sample file to test and validate complex foreign keys usescases",
+    "tables": [
+        {"name": "variety",
+         "schema": "sunset",
+         "clean": "delete",
+         "comment": "You can add comment on your table"
+        },
+        {"name": "fruit",
+         "schema": "sunset",
+         "clean": "delete"
+        },
+        {"name": "classification",
+         "schema": "sunset",
+         "clean": "delete"
+        },
+        {"name": "toplevel",
+         "schema": "sunset",
+         "clean": "delete"
+        },
+        {"name": "root",
+         "schema": "sunset",
+         "clean": "append",
+         "columns": [{ "name": "fooid", "generator": "serial"},
+                     { "name": "fooname", "generator": "FakeName" }]
+
+        }
+    ]
+
+}

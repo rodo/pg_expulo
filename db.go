@@ -2,12 +2,72 @@ package main
 
 import (
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 
-	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
+
+//go:embed sql/fetch_foreign_keys.sql
+var qryFetchForeignKeys string
+
+// Restart all the sequences
+func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
+	for _, s := range *sequences {
+		if s.LastValueUsed > s.InitialValue {
+			resetSeq(dbConn, s.SequenceName, s.LastValueUsed)
+		}
+	}
+}
+
+// Restart a sequence with a new value
+func resetSeq(dbConn *sql.DB, seq string, newvalue int64) {
+	query := "ALTER SEQUENCE %s RESTART WITH %d"
+
+	qry := fmt.Sprintf(query, seq, newvalue)
+
+	log.Info(fmt.Sprintf("Restart sequence %s with value %d", seq, newvalue))
+
+	_, err := dbConn.Exec(qry)
+	if err != nil {
+		log.Fatal("Error executing query in GetSeqLastValue:", err)
+	}
+}
+
+// Retreive the last used value in a sequence
+func GetSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
+	var err error
+
+	query := "SELECT last_value FROM %s"
+
+	last_value := int64(0)
+
+	qry := fmt.Sprintf(query, seq)
+
+	log.Debug(qry)
+
+	rows, err := dbConn.Query(qry)
+	if err != nil {
+		log.Fatal("Error executing query in GetSeqLastValue:", err)
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&last_value)
+		if err != nil {
+			log.Fatal("Error on row", err)
+		}
+		log.Debug(fmt.Sprintf("row values : %s %d", seq, last_value))
+
+	}
+	if err = rows.Err(); err != nil {
+		log.Fatal("Error reading rows :", err)
+	}
+	rows.Close()
+
+	return last_value, err
+}
 
 func getDsn(host string, port string, user string, pass string, db string, version string) (string, string) {
 
@@ -37,10 +97,6 @@ func connectDb(connectionString string) *sql.DB {
 	return db
 }
 
-func fullname(schemaname string, datname string, attname string) string {
-	return fmt.Sprintf("%s.%s.%s", schemaname, datname, attname)
-}
-
 func fullTableName(schemaname string, datname string) string {
 	return fmt.Sprintf("%s.%s", schemaname, datname)
 }
@@ -60,4 +116,148 @@ func queryTableSource(dbSrc *sql.DB, query string) (*sql.Rows, []string) {
 	}
 
 	return rows, columns
+}
+
+// Fetch the trigger constraint from the database catalog
+func GetTriggerConstraints(dbConn *sql.DB, tbFullnames []string, foreignKeys *map[string]string) []TriggerConstraint {
+
+	filter := "{" + strings.Join(tbFullnames, ",") + "}"
+
+	log.Debug("filter : ", filter)
+
+	rows, err := dbConn.Query(qryFetchForeignKeys, filter)
+	if err != nil {
+		log.Fatal("Error executing query in GetTriggerConstraints:", err)
+	}
+
+	var trgCons []TriggerConstraint
+	var trx TriggerConstraint
+	var tableTarget string
+	// The id of the column on pg_attribute
+	var columnTarget string
+	var columnSource string
+
+	for rows.Next() {
+		err = rows.Scan(&trx.TableFullName, &tableTarget, &trx.ConstraintName, &columnTarget, &columnSource)
+		if err != nil {
+			log.Fatal("Error on row", err)
+		}
+		log.Debug(fmt.Sprintf("row values : %s %s %s %s", trx.TableFullName, trx.ConstraintName, columnTarget, columnSource))
+
+		(*foreignKeys)[columnTarget] = columnSource
+
+		trgCons = append(trgCons, trx)
+	}
+	if err = rows.Err(); err != nil {
+		log.Fatal("Error reading rows :", err)
+	}
+	rows.Close()
+
+	return trgCons
+}
+
+// Disable all triggers on database
+func DeferForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
+
+	var err error
+
+	qry := "ALTER TABLE %s ALTER CONSTRAINT %s INITIALLY DEFERRED"
+
+	for _, t := range triggers {
+		err = AlterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
+	}
+
+	return err
+}
+
+// Reactivate all foreign keys
+func ReactivateForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
+
+	var err error
+
+	qry := "ALTER TABLE %s ALTER CONSTRAINT %s NOT DEFERRABLE"
+
+	for _, t := range triggers {
+		err = AlterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
+	}
+
+	return err
+}
+
+// Disable a trigger on database
+func AlterForeignKey(dbConn *sql.DB, queryDef string, tablename string, fkName string) error {
+	var err error
+
+	qry := fmt.Sprintf(queryDef, tablename, fkName)
+
+	log.Debug(qry)
+
+	_, err = dbConn.Exec(qry)
+	if err != nil {
+		log.Fatal("Error executing query in DeferForeignKey:", err)
+	}
+
+	return err
+}
+
+// Commit or Roll back an open transaction
+func CloseTx(tx *sql.Tx, tryOnly bool) string {
+
+	if tryOnly {
+		// Rollback the transaction on target as requested
+		if err := tx.Rollback(); err != nil {
+			log.Fatal("Error committing transaction: ", err)
+		}
+		log.Info("Rollback on target")
+		return "rollback"
+	} else {
+		// Commit the transaction on target if all queries succeed
+		if err := tx.Commit(); err != nil {
+			log.Fatal("Error committing transaction : ", err)
+		} else {
+			log.Info("Commit on target")
+		}
+		return "commit"
+	}
+}
+
+//go:embed sql/fetch_sequences.sql
+var qry_fetch_sequences string
+
+// Read the informations sequences from database
+// Retreive the last used value in a sequence
+func GetSequencesInfo(dbConn *sql.DB) ([]Sequence, map[string]Sequence) {
+	var err error
+	var sequences []Sequence
+
+	rows, err := dbConn.Query(qry_fetch_sequences)
+	if err != nil {
+		log.Fatal("Error executing query in GetSequencesInfo:", err)
+	}
+
+	for rows.Next() {
+		var s = Sequence{}
+		err = rows.Scan(&s.TableName, &s.ColumnName, &s.SequenceName, &s.LastValue, &s.ColumnPosition)
+		s.InitialValue = int64(s.LastValue)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("Error on row in GetSequencesInfo %s", err))
+		}
+		sequences = append(sequences, s)
+		log.Debug(fmt.Sprintf("Found sequence %s defined in database", s.SequenceName))
+	}
+	if err = rows.Err(); err != nil {
+		log.Fatal("Error reading rows :", err)
+	}
+	rows.Close()
+
+	log.Debug(fmt.Sprintf("Found %d sequence(s) defined in database", len(sequences)))
+
+	mapSeq := make(map[string]Sequence)
+
+	for _, seqX := range sequences {
+		mapSeq[seqX.SequenceName] = seqX
+	}
+
+	// TODO refacto this part and return only a map instead of two
+	return sequences, mapSeq
 }

@@ -13,7 +13,10 @@ func (R) FakeEmail() string     { return faker.Email() }
 func (R) FakeName() string      { return faker.Name() }
 func (R) FakeFirstName() string { return faker.FirstName() }
 
-func fillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string) ([]interface{}, []string, int, []string) {
+//gocyclo:ignore
+func FillColumn(table Table, col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, sequences *map[string]Sequence, foreignKeys map[string]string, initValues map[string]int64) ([]interface{}, []string, int, []string) {
+
+	x := int64(0)
 
 	// The column is ignored in configuration
 	if cfvalue == "ignore" {
@@ -39,7 +42,38 @@ func fillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []s
 
 	// Assign the target value
 	switch cfvalue {
+	case "foreign_key":
+
+		colkey := fmt.Sprintf("%s.%s", table.FullName, col.Name)
+		valkey := foreignKeys[colkey]
+
+		val := initValues[valkey]
+
+		// Deal with null in foreign key
+		if _, ok := cols[i].(int64); ok {
+			colvalue = append(colvalue, cols[i].(int64)+val)
+		} else {
+			colvalue = append(colvalue, cols[i])
+		}
+
+		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+	case "serial":
+		// Set the column with NULL values
+		if val, ok := cols[i].(int64); ok {
+			// If it is, perform the addition
+			x = val + col.SeqLastValue
+
+			seq := (*sequences)[col.SequenceName]
+			seq.LastValueUsed = x
+
+			(*sequences)[col.SequenceName] = seq
+		}
+
+		colvalue = append(colvalue, x)
+		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+
 	case "null":
+		// Set the column with NULL values
 		colvalue = append(colvalue, nil)
 		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 	case "mask":
@@ -73,5 +107,4 @@ func fillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []s
 	nbcol++
 
 	return colvalue, colparam, nbcol, colnames
-
 }

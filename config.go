@@ -30,16 +30,47 @@ func readConfig(filename string) Config {
 		fmt.Println(err)
 	}
 
-	// we initialize our Tables array
-	var tables Config
+	// we initialize our Config array
+	var conf Config
 
 	// we unmarshal our byteArray which contains our
-	// jsonFile's content into 'tables' which we defined above
-	if err := json.Unmarshal(byteValue, &tables); err != nil {
+	// jsonFile's content into our main Struct Config
+	if err := json.Unmarshal(byteValue, &conf); err != nil {
 		panic(err)
 	}
 
-	return tables
+	return conf
+}
+
+// Extend the confirmation with sequence information
+// Set the information on each column when they are defined as serial
+func GetInfoFromDatabases(config Config, sequences []Sequence) Config {
+
+	var tables []Table
+
+	for _, t := range config.Tables {
+		var newColumns []Column
+		t.FullName = fmt.Sprintf("%s.%s", t.Schema, t.Name)
+		for _, c := range t.Columns {
+			newColumn := c
+
+			for _, v := range sequences {
+				if t.FullName == v.TableName && c.Name == v.ColumnName {
+					log.Debug(fmt.Sprintf("Assign seq last value %d to %s.%s based on %s", v.LastValue, v.TableName, newColumn.Name, v.SequenceName))
+					newColumn.SequenceName = v.SequenceName
+					newColumn.SeqLastValue = int64(v.LastValue)
+				}
+			}
+			//
+			newColumns = append(newColumns, newColumn)
+			t.Columns = newColumns
+		}
+		tables = append(tables, t)
+	}
+
+	newconf := Config{tables}
+
+	return newconf
 }
 
 // Return the column columnName in the table Table

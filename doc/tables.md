@@ -32,13 +32,13 @@ Contains the schema name where the table is in the postgresql database.
 
 ## Clean
 
-`clean` is **optional**
+`clean` is **optional**, default value `DELATE`
 
 Define how the table will be purged on target. `clean` option take the following values :
 
-* **truncate**, the `TRUNCATE` sql command will be used
-
 * **delete**, the `DELETE` sql command will be used
+
+* **truncate**, the `TRUNCATE` sql command will be used
 
 * **append**, the table will be not purged, data will be added run after run
 

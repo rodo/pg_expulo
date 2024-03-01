@@ -2,19 +2,13 @@
     "tables": [
         {"name": "boat",
          "schema": "public",
-         "clean": "truncate",
+         "clean": "delete",
          "columns": [
-             {
-                 "name": "name",
-                 "generator": "null"
-             },
+             { "name": "id", "generator": "serial" },
+             { "name": "name", "generator": "null" },
              {
                  "name": "value",
                  "generator": "randomInt"
-             },
-             {
-                 "name": "this_column_does_not_exists",
-                 "generator": "randomString"
              },
              {
                  "name": "architect",
@@ -24,30 +18,28 @@
         },
         {"name": "race",
          "schema": "public",
+         "clean": "append",
          "filter": "profile='public'",
          "columns": [
-             {
-                 "name": "name",
-                 "generator": "null"
+             { "name": "id",   "generator": "serial" },
+             { "name": "name", "generator": "null"
              }
          ]
         },
         {"name": "results",
          "schema": "public",
-         "clean": "append",
+         "clean": "delete",
          "columns": [
-             {
-                 "name": "id",
-                 "generator": "ignore"
-             }]
+             { "name": "id", "generator": "serial" },
+             { "name": "race_id", "generator": "foreign_key" }
+         ]
         },
         {"name": "skipper",
          "schema": "public",
          "clean": "delete",
          "columns": [
              {
-                 "name": "id",
-                 "generator": "ignore"
+                 "name": "id", "generator": "serial"
              },
              {
                  "name": "name",
@@ -73,12 +65,8 @@
         {"schema": "public",
          "name": "town",
          "clean": "delete",
-         "deletion_filter": "area != 'South'"},
-        {"schema": "linked", "name": "root", "clean": "delete"},
-        {"schema": "linked", "name": "sheetone", "clean": "delete"},
-        {"schema": "linked", "name": "sheettwo", "clean": "delete"},
-        {"schema": "linked", "name": "sheetthree", "clean": "delete"},
-        {"name": "fish", "schema": "linked", "clean": "delete"}
+         "deletion_filter": "area != 'South'"
+        }
     ]
 
 }

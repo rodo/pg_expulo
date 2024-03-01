@@ -51,13 +51,13 @@ func flagParse() {
 
 	// Local usage only
 	debug := flag.Bool("debug", false, "run in loglevel DEBUG")
-	version := flag.Bool("version", false, "display version")
+	flagVersion := flag.Bool("version", false, "display version")
 
 	// Parse flags
 	flag.Parse()
 
-	if *version {
-		fmt.Println(Version)
+	if *flagVersion {
+		fmt.Println(version)
 		os.Exit(0)
 	}
 

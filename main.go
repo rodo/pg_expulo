@@ -1,4 +1,4 @@
-// expulo extract purge and lod data in two PostgreSQL instances
+// pg_expulo EXtract PUrge and LOad data from a PostgreSQL instances to another one
 package main
 
 import (
@@ -23,7 +23,8 @@ type Columns struct {
 
 // Table represent a table with her property in configuration file
 type Table struct {
-	Name           string   `json:"name"`
+	Name           string `json:"name"`
+	FullName       string
 	Columns        []Column `json:"columns"`
 	Schema         string   `json:"schema"`
 	CleanMethod    string   `json:"clean"`
@@ -31,17 +32,37 @@ type Table struct {
 	DeletionFilter string   `json:"deletion_filter"`
 }
 
+// Column in configuration
 type Column struct {
-	Name        string `json:"name"`
-	Generator   string `json:"generator"`
-	Min         int    `json:"min"`
-	Max         int    `json:"max"`
-	Timezone    string `json:"timezone"`
-	SQLFunction string `json:"function"`
+	Name         string `json:"name"`
+	Generator    string `json:"generator"`
+	Min          int    `json:"min"`
+	Max          int    `json:"max"`
+	Timezone     string `json:"timezone"`
+	SQLFunction  string `json:"function"`
+	SequenceName string
+	SeqLastValue int64
+}
+
+// Sequence with related attributes
+type Sequence struct {
+	TableName      string
+	ColumnName     string
+	SequenceName   string
+	LastValue      int
+	ColumnPosition int
+	InitialValue   int64
+	LastValueUsed  int64
+}
+
+// Table represent a table with her property in configuration file
+type TriggerConstraint struct {
+	TableFullName  string
+	ConstraintName string
 }
 
 var (
-	Version    = "0.0.2"
+	version    = "0.0.2"
 	tryOnly    = false
 	purgeOnly  = false
 	configFile = "config.json"
@@ -84,8 +105,8 @@ func main() {
 	dstDb := os.Getenv("PGDSTDATABASE")
 
 	// Construct connection string
-	conxSource, dsnSrc := getDsn(srcHost, srcPort, srcUser, srcPass, srcDb, Version)
-	conxDestination, dsnDst := getDsn(dstHost, dstPort, dstUser, dstPass, dstDb, Version)
+	conxSource, dsnSrc := getDsn(srcHost, srcPort, srcUser, srcPass, srcDb, version)
+	conxDestination, dsnDst := getDsn(dstHost, dstPort, dstUser, dstPass, dstDb, version)
 
 	// Connect to the database source
 	log.Debug("Connect on source")
@@ -97,36 +118,61 @@ func main() {
 	dbDst := connectDb(conxDestination)
 	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
 
+	// Extend the configuration with information at schema level in database
+	sequencesArr, sequencesMap := GetSequencesInfo(dbDst)
+	config = GetInfoFromDatabases(config, sequencesArr)
+
 	// Start a transaction
 	txDst, err := dbDst.Begin()
 	if err != nil {
 		log.Fatal("Error starting transaction: ", err)
 	}
 
+	// Build an Array with all table names in fullname form
+	var tableList []string
+	for _, t := range config.Tables {
+		tableList = append(tableList, fullTableName(t.Schema, t.Name))
+	}
+
+	log.Debug("tableList contains : ", tableList)
+
+	foreignKeys := make(map[string]string)
+
+	// Read the foreign keys
+	triggerConstraints := GetTriggerConstraints(dbDst, tableList, &foreignKeys)
+
 	// Delete data on destination tables
+	DeferForeignKeys(dbDst, triggerConstraints)
 	purgeTarget(config, txDst)
 
 	// if command line parameter set do purge and exit
-	if purgeOnly == true {
+	if purgeOnly {
 		log.Debug("Exit on option, purge")
+		CloseTx(txDst, tryOnly)
+		ReactivateForeignKeys(dbDst, triggerConstraints)
+		os.Exit(0)
+	}
 
-	} else {
+	// List all tables in insert order
+	for _, t := range config.Tables {
+		tableFullname := fullTableName(t.Schema, t.Name)
+		log.Debug(fmt.Sprintf("Will insert in : %s", tableFullname))
+	}
 
-		// Loop over all tables configured
-		for _, t := range config.Tables {
-			tableFullname := fullTableName(t.Schema, t.Name)
+	// Loop over all tables configured
+	for _, t := range config.Tables {
+		tableFullname := fullTableName(t.Schema, t.Name)
 
-			src_query := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
+		srcQuery := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
 
-			// Filter the data on source to fetch a subset of rows in a table
-			if len(t.Filter) > 0 {
-				src_query = fmt.Sprintf("%s AND %s", src_query, t.Filter)
-			}
-			startTime := time.Now()
-			nbrows := doTable(dbSrc, txDst, t, src_query)
-			elapsedTime := time.Since(startTime)
-			log.Info(fmt.Sprintf("%s : inserted %d rows total in %s", tableFullname, nbrows, elapsedTime))
+		// Filter the data on source to fetch a subset of rows in a table
+		if len(t.Filter) > 0 {
+			srcQuery = fmt.Sprintf("%s AND %s", srcQuery, t.Filter)
 		}
+		startTime := time.Now()
+		nbrows, _ := doTable(dbSrc, dbDst, txDst, t, srcQuery, &sequencesMap, foreignKeys)
+		elapsedTime := time.Since(startTime)
+		log.Info(fmt.Sprintf("%s : inserted %d rows total in %s", tableFullname, nbrows, elapsedTime))
 	}
 
 	if tryOnly {
@@ -136,6 +182,9 @@ func main() {
 		}
 		log.Info("Rollback on target")
 	} else {
+		// Restarting sequences
+		resetAllSequences(dbDst, &sequencesMap)
+
 		// Commit the transaction on target if all queries succeed
 		if err := txDst.Commit(); err != nil {
 			log.Fatal("Error committing transaction: ", err)
@@ -143,43 +192,53 @@ func main() {
 			log.Info("Commit on target")
 		}
 	}
-
+	log.Info("Thank you for using pg_expulo")
 }
 
-func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) int {
+func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery string, sequencesMap *map[string]Sequence, foreignKeys map[string]string) (int, string) {
 	tableFullname := fullTableName(t.Schema, t.Name)
 
 	log.Info(fmt.Sprintf("%s : read data fom table", tableFullname))
 
-	rows, columns := queryTableSource(dbSrc, src_query)
+	rows, columns := queryTableSource(dbSrc, srcQuery)
 
 	var multirows [][]interface{}
 	lenColumns := len(columns)
 
 	count := 0
 	nbinsert := 0
+	var errCode string
 	var colnames []string
 	var colparam []string
 
+	initValues := make(map[string]int64)
+
+	for _, ts := range *sequencesMap {
+		code := fmt.Sprintf("%s.%s", ts.TableName, ts.ColumnName)
+		// log.Debug(fmt.Sprintf("--- %s %d", code, ts.InitialValue))
+		initValues[code] = ts.InitialValue
+	}
+
 	for rows.Next() {
+		// Reset and increase value at first
 		colnames = []string{}
 		count++
 		nbinsert++
+		nbColumnModified := 1
 		cols := make([]interface{}, lenColumns)
-
 		columnPointers := make([]interface{}, len(cols))
 
-		for i, _ := range cols {
+		for i := range cols {
 			columnPointers[i] = &cols[i]
 
 		}
 		rows.Scan(columnPointers...)
-		nbcol := 1
+
 		colparam = []string{}
-		var colvalue []interface{}
+		var colValues []interface{}
 
 		// Manage what we do it data here
-		for i, _ := range cols {
+		for i := range cols {
 			cfvalue := "notfound"
 			col, found := getCols(t, columns[i])
 			if found {
@@ -191,21 +250,24 @@ func doTable(dbSrc *sql.DB, txDst *sql.Tx, t Table, src_query string) int {
 			// If the configuration ignore the column it won't be present
 			// in the INSERT statement
 
-			colvalue, colparam, nbcol, colnames = fillColumn(col, cfvalue, colvalue, colparam, nbcol, cols, colnames, i, columns)
+			colValues, colparam, nbColumnModified, colnames = FillColumn(t, col, cfvalue, colValues, colparam, nbColumnModified, cols, colnames, i, columns, sequencesMap, foreignKeys, initValues)
 
 		}
 
 		// INSERT
-		multirows = append(multirows, colvalue)
+		multirows = append(multirows, colValues)
 
-		batch_size := 1000
-		if nbinsert > batch_size-1 {
+		batchSize := 1000
+		if nbinsert > batchSize-1 {
 			log.Debug(fmt.Sprintf("Insert %d rows in table %s", nbinsert, t.Name))
 			nbinsert = 0
-			insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
+			_, errCode = insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
 			multirows = multirows[:0]
 		}
 	}
-	insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
-	return count
+	if nbinsert > 0 {
+		_, errCode = insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
+	}
+
+	return count, errCode
 }
