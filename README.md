@@ -1,8 +1,22 @@
-# expulo PostgreSQL data tool to extract, purge and load.  The extract
-part will fetch data with a set of `SELECT` statement execute on the
-**source**, the purge action will anonymise data based on ruls defined
-in configuration json file. The load action is a set on `INSERT`
-statements run on **destination**
+# pg_expulo EXtract, PUrge, LOad
+
+
+pg_expulo connect to two PostgreSQL instances, typically one in
+production and on in staging environement. The extraction is
+configured in a json file, data are read on source, data ar anonymize
+with your own rules, and load on target.
+
+pg_expulo aims to be explicit, easy to use, compliant and
+efficient. It reads data only on tables you mentionned in the config
+file, but will deal with all columns without the needs to define all
+of them. pg_expulo permits you to anonymize all your sensitive
+data. It will load them as fast as possible with bulk insert to the
+target.
+
+pg_expulo is able to deal with foreign keys and serial values, it will
+automatically set the right value.
+
+
 
 ## Usage
 
@@ -25,10 +39,29 @@ You can run pgexpulo without any parameter
 pg_expluo
 ```
 
+Use a specific config file
+
+```code
+pg_expluo --config config/special.json
+```
+
+Just give a try to your configuration. Data will be read, inserted on target, but **ROLLBACK** at the end
+
+```code
+pg_expluo --config config/special.json --test
+```
+
+You can only purge your target with
+
+```code
+pg_expluo --config config/special.json --purge
+```
+
+
 ## Configuration
 
 All configuration is done on `config.json` file which is read in the
-directory (will be change soon)
+directory.
 
 The main concept of pg_expulo is configuration is explicti at `table`
 level but implicit on `columns`, that means pg_expulo will only act on

@@ -11,6 +11,14 @@ The column will be set to **null**
 
 The column will not be present in the `INSERT` statement. As is it permits to use the default value in target table
 
+* serial
+
+Usefull if you column is a serial auto fill with sequence value, pg_expulo will manage it to avoid any conflicts
+
+* foreign_key
+
+For foreign keys, pg_expulo is able to auto update the value to ensure your data will be consistent at the end
+
 * mask
 
 The column will be filled with a 8 long char '********'
