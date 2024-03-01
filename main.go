@@ -55,7 +55,8 @@ type Sequence struct {
 	LastValueUsed  int64
 }
 
-// Table represent a table with her property in configuration file
+// TriggerConstraint represents the list of constraint associated to a
+// table
 type TriggerConstraint struct {
 	TableFullName  string
 	ConstraintName string
@@ -110,8 +111,8 @@ func main() {
 	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
 
 	// Extend the configuration with information at schema level in database
-	sequencesArr, sequencesMap := GetSequencesInfo(dbDst)
-	config = GetInfoFromDatabases(config, sequencesArr)
+	sequencesArr, sequencesMap := getSequencesInfo(dbDst)
+	config = getInfoFromDatabases(config, sequencesArr)
 
 	// Start a transaction
 	txDst, err := dbDst.Begin()
@@ -130,17 +131,17 @@ func main() {
 	foreignKeys := make(map[string]string)
 
 	// Read the foreign keys
-	triggerConstraints := GetTriggerConstraints(dbDst, tableList, &foreignKeys)
+	triggerConstraints := getTriggerConstraints(dbDst, tableList, &foreignKeys)
 
 	// Delete data on destination tables
-	DeferForeignKeys(dbDst, triggerConstraints)
+	deferForeignKeys(dbDst, triggerConstraints)
 	purgeTarget(config, txDst)
 
 	// if command line parameter set do purge and exit
 	if purgeOnly {
 		log.Debug("Exit on option, purge")
-		CloseTx(txDst, tryOnly)
-		ReactivateForeignKeys(dbDst, triggerConstraints)
+		closeTx(txDst, tryOnly)
+		reactivateForeignKeys(dbDst, triggerConstraints)
 		os.Exit(0)
 	}
 
@@ -241,7 +242,8 @@ func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery stri
 			// If the configuration ignore the column it won't be present
 			// in the INSERT statement
 
-			colValues, colparam, nbColumnModified, colnames = FillColumn(t, col, cfvalue, colValues, colparam, nbColumnModified, cols, colnames, i, columns, sequencesMap, foreignKeys, initValues)
+			// TODO refacto this function
+			colValues, colparam, nbColumnModified, colnames = fillColumn(t, col, cfvalue, colValues, colparam, nbColumnModified, cols, colnames, i, columns, sequencesMap, foreignKeys, initValues)
 
 		}
 

@@ -37,12 +37,12 @@ func resetSeq(dbConn *sql.DB, seq string, newvalue int64) {
 }
 
 // Retreive the last used value in a sequence
-func GetSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
+func getSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
 	var err error
 
 	query := "SELECT last_value FROM %s"
 
-	last_value := int64(0)
+	lastValue := int64(0)
 
 	qry := fmt.Sprintf(query, seq)
 
@@ -54,11 +54,11 @@ func GetSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&last_value)
+		err = rows.Scan(&lastValue)
 		if err != nil {
 			log.Fatal("Error on row", err)
 		}
-		log.Debug(fmt.Sprintf("row values : %s %d", seq, last_value))
+		log.Debug(fmt.Sprintf("row values : %s %d", seq, lastValue))
 
 	}
 	if err = rows.Err(); err != nil {
@@ -66,7 +66,7 @@ func GetSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
 	}
 	rows.Close()
 
-	return last_value, err
+	return lastValue, err
 }
 
 func getDsn(host string, port string, user string, pass string, db string, version string) (string, string) {
@@ -119,7 +119,7 @@ func queryTableSource(dbSrc *sql.DB, query string) (*sql.Rows, []string) {
 }
 
 // Fetch the trigger constraint from the database catalog
-func GetTriggerConstraints(dbConn *sql.DB, tbFullnames []string, foreignKeys *map[string]string) []TriggerConstraint {
+func getTriggerConstraints(dbConn *sql.DB, tbFullnames []string, foreignKeys *map[string]string) []TriggerConstraint {
 
 	filter := "{" + strings.Join(tbFullnames, ",") + "}"
 
@@ -157,35 +157,35 @@ func GetTriggerConstraints(dbConn *sql.DB, tbFullnames []string, foreignKeys *ma
 }
 
 // Disable all triggers on database
-func DeferForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
+func deferForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
 
 	var err error
 
 	qry := "ALTER TABLE %s ALTER CONSTRAINT %s INITIALLY DEFERRED"
 
 	for _, t := range triggers {
-		err = AlterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
+		err = alterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
 	}
 
 	return err
 }
 
 // Reactivate all foreign keys
-func ReactivateForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
+func reactivateForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
 
 	var err error
 
 	qry := "ALTER TABLE %s ALTER CONSTRAINT %s NOT DEFERRABLE"
 
 	for _, t := range triggers {
-		err = AlterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
+		err = alterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
 	}
 
 	return err
 }
 
 // Disable a trigger on database
-func AlterForeignKey(dbConn *sql.DB, queryDef string, tablename string, fkName string) error {
+func alterForeignKey(dbConn *sql.DB, queryDef string, tablename string, fkName string) error {
 	var err error
 
 	qry := fmt.Sprintf(queryDef, tablename, fkName)
@@ -201,7 +201,7 @@ func AlterForeignKey(dbConn *sql.DB, queryDef string, tablename string, fkName s
 }
 
 // Commit or Roll back an open transaction
-func CloseTx(tx *sql.Tx, tryOnly bool) string {
+func closeTx(tx *sql.Tx, tryOnly bool) string {
 
 	if tryOnly {
 		// Rollback the transaction on target as requested
@@ -210,27 +210,27 @@ func CloseTx(tx *sql.Tx, tryOnly bool) string {
 		}
 		log.Info("Rollback on target")
 		return "rollback"
-	} else {
-		// Commit the transaction on target if all queries succeed
-		if err := tx.Commit(); err != nil {
-			log.Fatal("Error committing transaction : ", err)
-		} else {
-			log.Info("Commit on target")
-		}
-		return "commit"
 	}
+
+	// Commit the transaction on target if all queries succeed
+	if err := tx.Commit(); err != nil {
+		log.Fatal("Error committing transaction : ", err)
+	} else {
+		log.Info("Commit on target")
+	}
+	return "commit"
 }
 
 //go:embed sql/fetch_sequences.sql
-var qry_fetch_sequences string
+var qryFetchSequences string
 
 // Read the informations sequences from database
 // Retreive the last used value in a sequence
-func GetSequencesInfo(dbConn *sql.DB) ([]Sequence, map[string]Sequence) {
+func getSequencesInfo(dbConn *sql.DB) ([]Sequence, map[string]Sequence) {
 	var err error
 	var sequences []Sequence
 
-	rows, err := dbConn.Query(qry_fetch_sequences)
+	rows, err := dbConn.Query(qryFetchSequences)
 	if err != nil {
 		log.Fatal("Error executing query in GetSequencesInfo:", err)
 	}
