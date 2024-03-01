@@ -13,7 +13,8 @@ func (R) FakeEmail() string     { return faker.Email() }
 func (R) FakeName() string      { return faker.Name() }
 func (R) FakeFirstName() string { return faker.FirstName() }
 
-func FillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, sequences *map[string]Sequence) ([]interface{}, []string, int, []string) {
+//gocyclo:ignore
+func FillColumn(table Table, col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, sequences *map[string]Sequence, foreignKeys map[string]string, initValues map[string]int64) ([]interface{}, []string, int, []string) {
 
 	x := int64(0)
 
@@ -41,6 +42,21 @@ func FillColumn(col Column, cfvalue string, colvalue []interface{}, colparam []s
 
 	// Assign the target value
 	switch cfvalue {
+	case "foreign_key":
+
+		colkey := fmt.Sprintf("%s.%s", table.FullName, col.Name)
+		valkey := foreignKeys[colkey]
+
+		val := initValues[valkey]
+
+		// Deal with null in foreign key
+		if _, ok := cols[i].(int64); ok {
+			colvalue = append(colvalue, cols[i].(int64)+val)
+		} else {
+			colvalue = append(colvalue, cols[i])
+		}
+
+		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
 	case "serial":
 		// Set the column with NULL values
 		if val, ok := cols[i].(int64); ok {

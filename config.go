@@ -56,7 +56,7 @@ func GetInfoFromDatabases(config Config, sequences []Sequence) Config {
 
 			for _, v := range sequences {
 				if t.FullName == v.TableName && c.Name == v.ColumnName {
-					log.Debug(fmt.Sprintf("Assign seq last value %d to %s.%s based on %s", v.LastValue, newColumn.Name, v.TableName, v.SequenceName))
+					log.Debug(fmt.Sprintf("Assign seq last value %d to %s.%s based on %s", v.LastValue, v.TableName, newColumn.Name, v.SequenceName))
 					newColumn.SequenceName = v.SequenceName
 					newColumn.SeqLastValue = int64(v.LastValue)
 				}

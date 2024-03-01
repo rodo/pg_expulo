@@ -1,0 +1,30 @@
+{
+    "comment": "Sample file to test and validate complex foreign keys usescases",
+    "tables": [
+
+        {"name": "root",
+         "schema": "laires",
+         "clean": "append",
+         "columns": [{ "name": "id", "generator": "serial"},
+                     { "name": "name", "generator": "FakeName" }]
+
+        },
+        {"name": "la",
+         "schema": "laires",
+         "clean": "append",
+         "columns": [{ "name": "id", "generator": "serial"},
+                     { "name": "topid", "generator": "foreign_key"},
+                     { "name": "name", "generator": "FakeName" }]
+
+        },
+        {"name": "lb",
+         "schema": "laires",
+         "clean": "delete",
+         "columns": [{ "name": "id", "generator": "serial"},
+                     { "name": "topid", "generator": "foreign_key"},
+                     { "name": "name", "generator": "FakeName" }]
+
+        }
+    ]
+
+}

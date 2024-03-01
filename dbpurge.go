@@ -11,11 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//go:embed sql/primary_key.sql
-var qry_primary_key string
-
 //go:embed sql/linked_tables.sql
-var qry_linked_tables string
+var qryLinkedTables string
 
 // Purge all the tables in the database target
 
@@ -40,15 +37,15 @@ func getTableByFullName(config Config, name string) (Table, bool) {
 func purgeTarget(config Config, txDst *sql.Tx) {
 
 	forcePurge := true
-	var table_list []string
+	var tableList []string
 	var OrderedTables []Table
 	// Order tables depending on foreign keys
 	for _, t := range config.Tables {
-		table_list = append(table_list, fullTableName(t.Schema, t.Name))
+		tableList = append(tableList, fullTableName(t.Schema, t.Name))
 	}
 
-	for _, tname := range getOrderTableList(table_list, txDst) {
-		// table_list = append(table_list, fmt.Sprintf("%s.%s", t.Schema, t.Name))
+	for _, tname := range getOrderTableList(tableList, txDst) {
+		// tableList = append(tableList, fmt.Sprintf("%s.%s", t.Schema, t.Name))
 		t, found := getTableByFullName(config, tname)
 		if found {
 			OrderedTables = append(OrderedTables, t)
@@ -70,12 +67,11 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 		switch t.CleanMethod {
 		case "append":
 			log.Debug("Do nothing on target purge according to configuration")
-		case "delete":
-			_ = deleteData(t, forcePurge, txDst)
-		default:
+
+		case "truncate":
 			log.Debug("TRUNCATE TABLE according to default")
-			dst_query := "TRUNCATE " + tableFullname + ";"
-			_, err := txDst.Exec(dst_query)
+			dstQuery := "TRUNCATE " + tableFullname + ";"
+			_, err := txDst.Exec(dstQuery)
 			if err != nil {
 				if forcePurge {
 					log.Error(err)
@@ -83,6 +79,8 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 					log.Fatal(err)
 				}
 			}
+		default:
+			_ = deleteData(t, forcePurge, txDst)
 		}
 	}
 }
@@ -126,27 +124,27 @@ func deleteData(t Table, forcePurge bool, txDst *sql.Tx) error {
 // pointing to them
 // The order is not perfect as it is based on numer of foreign keys
 // it's a first step
-func getOrderTableList(table_list []string, txDst *sql.Tx) []string {
+func getOrderTableList(tableList []string, txDst *sql.Tx) []string {
 
 	var pkName string
-	var nb_fk int
-	var ordered_table_list []string
-	tables := "{" + strings.Join(table_list, ",") + "}"
+	var nbfk int
+	var orderedTableList []string
+	tables := "{" + strings.Join(tableList, ",") + "}"
 
 	// Query data from tableA
-	rows, erri := txDst.Query(qry_linked_tables, tables)
+	rows, erri := txDst.Query(qryLinkedTables, tables)
 	if erri != nil {
 		log.Fatal("Error querying data from tableA: ", erri)
 	}
 	// Iterate through the rows from tableA and insert into tableB
 	for rows.Next() {
-		if erri := rows.Scan(&pkName, &nb_fk); erri != nil {
+		if erri := rows.Scan(&pkName, &nbfk); erri != nil {
 			log.Error("Error scanning row: ", erri)
 
 		}
-		ordered_table_list = append(ordered_table_list, pkName)
+		orderedTableList = append(orderedTableList, pkName)
 	}
 	rows.Close()
 	log.Debug(pkName)
-	return ordered_table_list
+	return orderedTableList
 }

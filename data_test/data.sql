@@ -2,10 +2,11 @@
  * Play this file on source only
  */
 
-TRUNCATE results;
-TRUNCATE race;
-TRUNCATE skipper;
-TRUNCATE boat;
+
+TRUNCATE results CASCADE;
+TRUNCATE race CASCADE;
+TRUNCATE skipper CASCADE;
+TRUNCATE boat CASCADE;
 
 INSERT INTO boat (name, length) VALUES ('Pen Duick I', 17.6);
 INSERT INTO boat (name, updated_at) VALUES ('Pen Duick II', now());
@@ -19,16 +20,9 @@ INSERT INTO skipper (name, email) VALUES ('Eric Tabarly', 'eric@tabarly.domain')
 INSERT INTO skipper (name) VALUES ('Florence Arthaud'), ('Catherine Chabaud');
 INSERT INTO skipper (name) VALUES ('Loïck Peyron');
 
-PREPARE plan AS INSERT INTO skipper (name, updated_at)
-VALUES ($1, now() ), ($2, now() ), ($3, now() );
-EXECUTE plan('Guirec Soudée', 'Loïck Peyron',    'Damien Seguin');
-EXECUTE plan('Anne Caseneuve','Clarisse Crémer', 'Ellen MacArthur');
-
-
--- 55 results
---
---
-INSERT INTO results (year) SELECT generate_series(1960, 2014, 1);
+INSERT INTO skipper (name, updated_at) VALUES ('Guirec Soudée', now()), ('Loïck Peyron', now()),
+('Damien Seguin', now()),
+('Anne Caseneuve', now()), ('Clarisse Crémer', now()), ('Ellen MacArthur', now());
 
 INSERT INTO cheater VALUES (DEFAULT);
 
@@ -44,13 +38,13 @@ INSERT INTO race (name, profile) VALUES ('Les potes et moi', 'private');
 --
 --
 --
-INSERT INTO linked.root (name) VALUES ('one');
-INSERT INTO linked.root (name) VALUES ('two');
-INSERT INTO linked.sheetone (name) VALUES ('one');
-INSERT INTO linked.sheetone (name) VALUES ('two');
-INSERT INTO linked.sheettwo (name) VALUES ('one');
-INSERT INTO linked.sheetthree (name) VALUES ('one');
-INSERT INTO linked.fish (aname, bname) VALUES ('one', 'one');
+-- 55 results
+--
+--
+INSERT INTO results (race_id, year) SELECT 1, generate_series(1960, 1962, 1);
+--INSERT INTO results (race_id, year) SELECT 2, generate_series(1960, 2014, 1);
+--INSERT INTO results (race_id, year) SELECT 3, generate_series(1960, 2014, 1);
+
 --
 -- we sync only rows with area=North
 -- data for other area exists on target

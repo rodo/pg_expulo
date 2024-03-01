@@ -1,14 +1,14 @@
 SET client_min_messages TO WARNING;
 
+DROP TABLE IF EXISTS results;
 DROP TABLE IF EXISTS race;
 DROP TABLE IF EXISTS town;
-DROP TABLE IF EXISTS results;
 DROP TABLE IF EXISTS boat;
 DROP TABLE IF EXISTS skipper;
 DROP TABLE IF EXISTS cheater;
 
 CREATE TABLE boat (
-  id serial primary key,
+  id serial PRIMARY KEY,
   name text,
   created_at timestamp with time zone default now(),
   updated_at timestamp without time zone,
@@ -30,7 +30,7 @@ CREATE TABLE skipper (
  *
  */
 CREATE TABLE race (
-  id serial primary key,
+  id serial PRIMARY KEY,
   name text,
   year int,
   profile text default 'private',
@@ -42,6 +42,7 @@ CREATE TABLE race (
  */
 CREATE TABLE results (
   id serial primary key,
+  race_id int REFERENCES race(id),
   year int
 );
 
@@ -55,19 +56,3 @@ CREATE TABLE cheater (name text default 'fool');
    Primary Key non integer
 */
 CREATE TABLE town (name text PRIMARY KEY, area text default 'North');
-
-/*
- *
- *
- */
-DROP SCHEMA IF EXISTS linked CASCADE;
-CREATE SCHEMA IF NOT EXISTS linked;
-
-
-CREATE TABLE linked.root (name text default 'fool' PRIMARY KEY);
-CREATE TABLE linked.sheetone (name text default 'fool' PRIMARY KEY REFERENCES linked.root(name));
-CREATE TABLE linked.sheettwo (name text default 'fool' PRIMARY KEY REFERENCES linked.root(name));
-CREATE TABLE linked.sheetthree (name text default 'fool' PRIMARY KEY REFERENCES linked.sheetone(name));
-CREATE TABLE linked.fish (
-  aname text default 'fool' REFERENCES linked.sheetone(name),
-  bname text default 'fool' REFERENCES linked.sheettwo(name) );

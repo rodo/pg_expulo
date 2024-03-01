@@ -7,29 +7,28 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 )
 
-//go:embed sql/fetch_table_foreign_keys.sql
-var qry_fetch_table_foreign_keys string
+//go:embed sql/fetch_foreign_keys.sql
+var qryFetchForeignKeys string
 
 // Restart all the sequences
-func ResetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
+func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 	for _, s := range *sequences {
 		if s.LastValueUsed > s.InitialValue {
-			ResetSeq(dbConn, s.SequenceName, s.LastValueUsed)
+			resetSeq(dbConn, s.SequenceName, s.LastValueUsed)
 		}
 	}
 }
 
 // Restart a sequence with a new value
-func ResetSeq(dbConn *sql.DB, seq string, newvalue int64) {
+func resetSeq(dbConn *sql.DB, seq string, newvalue int64) {
 	query := "ALTER SEQUENCE %s RESTART WITH %d"
 
 	qry := fmt.Sprintf(query, seq, newvalue)
 
-	log.Debug(fmt.Sprintf("Restart sequence %s with value %d", seq, newvalue))
+	log.Info(fmt.Sprintf("Restart sequence %s with value %d", seq, newvalue))
 
 	_, err := dbConn.Exec(qry)
 	if err != nil {
@@ -43,8 +42,7 @@ func GetSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
 
 	query := "SELECT last_value FROM %s"
 
-	var last_value int64
-	last_value = 0
+	last_value := int64(0)
 
 	qry := fmt.Sprintf(query, seq)
 
@@ -99,10 +97,6 @@ func connectDb(connectionString string) *sql.DB {
 	return db
 }
 
-func fullname(schemaname string, datname string, attname string) string {
-	return fmt.Sprintf("%s.%s.%s", schemaname, datname, attname)
-}
-
 func fullTableName(schemaname string, datname string) string {
 	return fmt.Sprintf("%s.%s", schemaname, datname)
 }
@@ -125,13 +119,13 @@ func queryTableSource(dbSrc *sql.DB, query string) (*sql.Rows, []string) {
 }
 
 // Fetch the trigger constraint from the database catalog
-func GetTriggerConstraints(dbConn *sql.DB, tbFullnames []string) []TriggerConstraint {
+func GetTriggerConstraints(dbConn *sql.DB, tbFullnames []string, foreignKeys *map[string]string) []TriggerConstraint {
 
 	filter := "{" + strings.Join(tbFullnames, ",") + "}"
 
 	log.Debug("filter : ", filter)
 
-	rows, err := dbConn.Query(qry_fetch_table_foreign_keys, filter)
+	rows, err := dbConn.Query(qryFetchForeignKeys, filter)
 	if err != nil {
 		log.Fatal("Error executing query in GetTriggerConstraints:", err)
 	}
@@ -140,16 +134,17 @@ func GetTriggerConstraints(dbConn *sql.DB, tbFullnames []string) []TriggerConstr
 	var trx TriggerConstraint
 	var tableTarget string
 	// The id of the column on pg_attribute
-	var conid int
-	// The id of the column referenced on pg_attribute
-	var confid int
+	var columnTarget string
+	var columnSource string
 
 	for rows.Next() {
-		err = rows.Scan(&trx.TableFullName, &tableTarget, &trx.ConstraintName, &conid, &confid)
+		err = rows.Scan(&trx.TableFullName, &tableTarget, &trx.ConstraintName, &columnTarget, &columnSource)
 		if err != nil {
 			log.Fatal("Error on row", err)
 		}
-		log.Debug(fmt.Sprintf("row values : %s %s", trx.TableFullName, trx.ConstraintName))
+		log.Debug(fmt.Sprintf("row values : %s %s %s %s", trx.TableFullName, trx.ConstraintName, columnTarget, columnSource))
+
+		(*foreignKeys)[columnTarget] = columnSource
 
 		trgCons = append(trgCons, trx)
 	}
@@ -218,7 +213,7 @@ func CloseTx(tx *sql.Tx, tryOnly bool) string {
 	} else {
 		// Commit the transaction on target if all queries succeed
 		if err := tx.Commit(); err != nil {
-			log.Fatal("Error committing transaction: ", err)
+			log.Fatal("Error committing transaction : ", err)
 		} else {
 			log.Info("Commit on target")
 		}
@@ -242,12 +237,13 @@ func GetSequencesInfo(dbConn *sql.DB) ([]Sequence, map[string]Sequence) {
 
 	for rows.Next() {
 		var s = Sequence{}
-		err = rows.Scan(&s.TableName, &s.ColumnName, &s.SequenceName, &s.InitialValue, &s.LastValue, &s.ColumnPosition)
+		err = rows.Scan(&s.TableName, &s.ColumnName, &s.SequenceName, &s.LastValue, &s.ColumnPosition)
+		s.InitialValue = int64(s.LastValue)
 		if err != nil {
 			log.Fatal(fmt.Sprintf("Error on row in GetSequencesInfo %s", err))
 		}
 		sequences = append(sequences, s)
-
+		log.Debug(fmt.Sprintf("Found sequence %s defined in database", s.SequenceName))
 	}
 	if err = rows.Err(); err != nil {
 		log.Fatal("Error reading rows :", err)

@@ -1,5 +1,5 @@
 /*
- * Create tables and data to validate foreign keys
+ * Create tables and data to validate foreign keys and serial
  */
 BEGIN;
 
@@ -10,15 +10,14 @@ CREATE TABLE sunset.root (foocolor int default 0, fooid serial PRIMARY KEY, foon
 CREATE TABLE sunset.classification (fooid int primary key, fooname text);
 CREATE TABLE sunset.fruit (fooname text);
 
-CREATE TABLE sunset.variety (foocolor int default 0, fooid int  PRIMARY KEY, fooname text,
+CREATE TABLE sunset.variety (foocolor int default 0, fooid int PRIMARY KEY, fooname text,
 fooclassid int REFERENCES sunset.classification(fooid));
 
 
 INSERT INTO sunset.classification (fooid, fooname) VALUES (1, 'Vegetables');
 INSERT INTO sunset.classification (fooid, fooname) VALUES (2, 'Fruits');
 
-
-INSERT INTO sunset.variety (fooid, fooname, fooclassid) VALUES (1, 'Boscop', 1);
+INSERT INTO sunset.variety (fooid, fooname, fooclassid) VALUES (1000, 'Boscop', 1);
 INSERT INTO sunset.fruit (fooname) VALUES ('Apple');
 INSERT INTO sunset.fruit (fooname) VALUES ('Peach');
 
@@ -27,7 +26,7 @@ INSERT INTO sunset.fruit (fooname) VALUES ('Peach');
 INSERT INTO sunset.root (fooname) VALUES ('The root level');
 --
 ALTER TABLE sunset.fruit ADD COLUMN foovarid int REFERENCES sunset.variety(fooid);
-UPDATE sunset.fruit SET foovarid = 1;
+UPDATE sunset.fruit SET foovarid = 1000;
 --
 --
 
@@ -37,7 +36,7 @@ ALTER TABLE sunset.classification ADD COLUMN levelfooid int REFERENCES sunset.to
 UPDATE sunset.classification SET levelfooid = 2;
 
 
-CREATE TABLE sunset.secondlevel (fooid int PRIMARY KEY, fooname text,
+CREATE TABLE sunset.secondlevel (fooid serial PRIMARY KEY, fooname text,
 topfooid int REFERENCES sunset.toplevel(fooid));
 
 --
@@ -45,8 +44,8 @@ topfooid int REFERENCES sunset.toplevel(fooid));
 
 --SET CONSTRAINTS ALL DEFERRED;
 ALTER TABLE sunset.fruit ALTER CONSTRAINT fruit_foovarid_fkey  INITIALLY DEFERRED;
-INSERT INTO sunset.fruit (fooname,foovarid) VALUES ('Peach', 2);
-INSERT INTO sunset.variety (fooid, fooname, fooclassid) VALUES (2, 'Boscop', 1);
+INSERT INTO sunset.fruit (fooname,foovarid) VALUES ('Peach', 1001);
+INSERT INTO sunset.variety (fooid, fooname, fooclassid) VALUES (1001, 'Boscop', 1);
 
 COMMIT;
 ALTER TABLE sunset.fruit ALTER CONSTRAINT fruit_foovarid_fkey  NOT DEFERRABLE;
