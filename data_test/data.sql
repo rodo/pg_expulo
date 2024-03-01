@@ -41,9 +41,8 @@ INSERT INTO race (name, profile) VALUES ('Les potes et moi', 'private');
 -- 55 results
 --
 --
-INSERT INTO results (race_id, year) SELECT 1, generate_series(1960, 1962, 1);
---INSERT INTO results (race_id, year) SELECT 2, generate_series(1960, 2014, 1);
---INSERT INTO results (race_id, year) SELECT 3, generate_series(1960, 2014, 1);
+INSERT INTO results (race_id, year) SELECT 1, generate_series(1960, 2014, 1);
+
 
 --
 -- we sync only rows with area=North
