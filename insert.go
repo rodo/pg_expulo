@@ -12,7 +12,7 @@ import (
 )
 
 func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, colparam []string, multirows [][]interface{}) (int, string) {
-	col_names := strings.Join(colnames, ",")
+	colNames := strings.Join(colnames, ",")
 
 	nbRows := len(multirows)
 	var errCode string
@@ -25,7 +25,7 @@ func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, col
 		allValues = append(allValues, row...)
 	}
 
-	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableFullname, col_names, pat)
+	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableFullname, colNames, pat)
 
 	_, err := dbDst.Exec(destQuery, allValues...)
 	if err != nil {
