@@ -55,7 +55,8 @@ type Sequence struct {
 	LastValueUsed  int64
 }
 
-// Table represent a table with her property in configuration file
+// TriggerConstraint represents the list of constraint associated to a
+// table
 type TriggerConstraint struct {
 	TableFullName  string
 	ConstraintName string
@@ -250,7 +251,8 @@ func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery stri
 			// If the configuration ignore the column it won't be present
 			// in the INSERT statement
 
-			colValues, colparam, nbColumnModified, colnames = FillColumn(t, col, cfvalue, colValues, colparam, nbColumnModified, cols, colnames, i, columns, sequencesMap, foreignKeys, initValues)
+			// TODO refacto this function
+			colValues, colparam, nbColumnModified, colnames = fillColumn(t, col, cfvalue, colValues, colparam, nbColumnModified, cols, colnames, i, columns, sequencesMap, foreignKeys, initValues)
 
 		}
 

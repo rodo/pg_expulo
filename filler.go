@@ -7,14 +7,14 @@ import (
 	"github.com/go-faker/faker/v4"
 )
 
-type R struct{}
+type genericFake struct{}
 
-func (R) FakeEmail() string     { return faker.Email() }
-func (R) FakeName() string      { return faker.Name() }
-func (R) FakeFirstName() string { return faker.FirstName() }
+func (genericFake) FakeEmail() string     { return faker.Email() }
+func (genericFake) FakeName() string      { return faker.Name() }
+func (genericFake) FakeFirstName() string { return faker.FirstName() }
 
 //gocyclo:ignore
-func FillColumn(table Table, col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, sequences *map[string]Sequence, foreignKeys map[string]string, initValues map[string]int64) ([]interface{}, []string, int, []string) {
+func fillColumn(table Table, col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, sequences *map[string]Sequence, foreignKeys map[string]string, initValues map[string]int64) ([]interface{}, []string, int, []string) {
 
 	x := int64(0)
 
@@ -28,7 +28,7 @@ func FillColumn(table Table, col Column, cfvalue string, colvalue []interface{},
 
 	longv := fmt.Sprintf("%s******", cfvalue)
 	if longv[:4] == "Fake" {
-		v := reflect.ValueOf(R{})
+		v := reflect.ValueOf(genericFake{})
 		m := v.MethodByName(cfvalue)
 		res := m.Call(nil)
 
