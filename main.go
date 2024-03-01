@@ -120,8 +120,8 @@ func main() {
 	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
 
 	// Extend the configuration with information at schema level in database
-	sequencesArr, sequencesMap := GetSequencesInfo(dbDst)
-	config = GetInfoFromDatabases(config, sequencesArr)
+	sequencesArr, sequencesMap := getSequencesInfo(dbDst)
+	config = getInfoFromDatabases(config, sequencesArr)
 
 	// Start a transaction
 	txDst, err := dbDst.Begin()
@@ -140,17 +140,17 @@ func main() {
 	foreignKeys := make(map[string]string)
 
 	// Read the foreign keys
-	triggerConstraints := GetTriggerConstraints(dbDst, tableList, &foreignKeys)
+	triggerConstraints := getTriggerConstraints(dbDst, tableList, &foreignKeys)
 
 	// Delete data on destination tables
-	DeferForeignKeys(dbDst, triggerConstraints)
+	deferForeignKeys(dbDst, triggerConstraints)
 	purgeTarget(config, txDst)
 
 	// if command line parameter set do purge and exit
 	if purgeOnly {
 		log.Debug("Exit on option, purge")
-		CloseTx(txDst, tryOnly)
-		ReactivateForeignKeys(dbDst, triggerConstraints)
+		closeTx(txDst, tryOnly)
+		reactivateForeignKeys(dbDst, triggerConstraints)
 		os.Exit(0)
 	}
 

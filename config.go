@@ -44,7 +44,7 @@ func readConfig(filename string) Config {
 
 // Extend the confirmation with sequence information
 // Set the information on each column when they are defined as serial
-func GetInfoFromDatabases(config Config, sequences []Sequence) Config {
+func getInfoFromDatabases(config Config, sequences []Sequence) Config {
 
 	var tables []Table
 
