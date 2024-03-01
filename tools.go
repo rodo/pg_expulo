@@ -9,6 +9,38 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ConnectionParameters define all the parameters needed to connect to PostgreSQL
+type ConnectionParameters struct {
+	Host string
+	Port string
+	User string
+	Pass string
+	Db   string
+}
+
+func getEnvVariable(envName string) string {
+
+	value, exists := os.LookupEnv(envName)
+
+	if !exists {
+		log.Error(fmt.Sprintf("Environment variable %s is not defined, please define it\n", envName))
+		log.Fatal("exit on previous error")
+	}
+
+	return value
+}
+
+func readEnv(target string) ConnectionParameters {
+
+	srcHost := getEnvVariable(fmt.Sprintf("PG%sHOST", target))
+	srcPort := getEnvVariable(fmt.Sprintf("PG%sPORT", target))
+	srcUser := getEnvVariable(fmt.Sprintf("PG%sUSER", target))
+	srcPass := getEnvVariable(fmt.Sprintf("PG%sPASSWORD", target))
+	srcDb := getEnvVariable(fmt.Sprintf("PG%sDATABASE", target))
+
+	return ConnectionParameters{srcHost, srcPort, srcUser, srcPass, srcDb}
+}
+
 func toolPat(nbRows int, colparam []string) string {
 	x := 1
 	r := 0

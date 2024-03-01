@@ -92,21 +92,12 @@ func main() {
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
 	// Read connection information from env variables
-	srcHost := os.Getenv("PGSRCHOST")
-	srcPort := os.Getenv("PGSRCPORT")
-	srcUser := os.Getenv("PGSRCUSER")
-	srcPass := os.Getenv("PGSRCPASSWORD")
-	srcDb := os.Getenv("PGSRCDATABASE")
-
-	dstHost := os.Getenv("PGDSTHOST")
-	dstPort := os.Getenv("PGDSTPORT")
-	dstUser := os.Getenv("PGDSTUSER")
-	dstPass := os.Getenv("PGDSTPASSWORD")
-	dstDb := os.Getenv("PGDSTDATABASE")
+	conns := readEnv("SRC")
+	connt := readEnv("DST")
 
 	// Construct connection string
-	conxSource, dsnSrc := getDsn(srcHost, srcPort, srcUser, srcPass, srcDb, version)
-	conxDestination, dsnDst := getDsn(dstHost, dstPort, dstUser, dstPass, dstDb, version)
+	conxSource, dsnSrc := getDsn(conns.Host, conns.Port, conns.User, conns.Pass, conns.Db, version)
+	conxDestination, dsnDst := getDsn(connt.Host, connt.Port, connt.User, connt.Pass, connt.Db, version)
 
 	// Connect to the database source
 	log.Debug("Connect on source")
