@@ -11,21 +11,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, colparam []string, multirows [][]interface{}) (int, string) {
-	colNames := strings.Join(colnames, ",")
+// Build the statement for bulk insert
+func prepareQuery(tableName string, colNames []string, pat string) string {
+	cols := strings.Join(colNames, ",")
+	qrs := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableName, cols, pat)
+	return qrs
+}
 
-	nbRows := len(multirows)
-	var errCode string
-	pat := toolPat(nbRows, colparam)
-	// log.Debug(fmt.Sprintf("there is %d rows of %d columns", nbRows, nbColumns))
-
+func prepareValues(multirows [][]interface{}) []interface{} {
 	var allValues []interface{}
 	for _, row := range multirows {
 		// Append each element of the row to allValues
 		allValues = append(allValues, row...)
 	}
+	return allValues
+}
 
-	destQuery := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s", tableFullname, colNames, pat)
+func insertMultiData(dbDst *sql.Tx, tableFullname string, colNames []string, stmtParam []string, multirows [][]interface{}) (int, string) {
+	var errCode string
+
+	pat := toolPat(len(multirows), stmtParam)
+	destQuery := prepareQuery(tableFullname, colNames, pat)
+	allValues := prepareValues(multirows)
 
 	_, err := dbDst.Exec(destQuery, allValues...)
 	if err != nil {
