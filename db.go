@@ -13,6 +13,9 @@ import (
 //go:embed sql/fetch_foreign_keys.sql
 var qryFetchForeignKeys string
 
+//go:embed sql/tables.sql
+var qryTables string
+
 // Restart all the sequences
 func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 	for _, s := range *sequences {
@@ -20,6 +23,24 @@ func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 			resetSeq(dbConn, s.SequenceName, s.LastValueUsed)
 		}
 	}
+}
+
+// Restart a sequence with a new value
+func getExistingTables(dbConn *sql.DB) []string {
+	var tables []string
+
+	rows, err := dbConn.Query(qryTables)
+	if err != nil {
+		log.Fatal("Error executing query in GetExistingTables:", err)
+	}
+
+	for rows.Next() {
+		var table string
+		err = rows.Scan(&table)
+		tables = append(tables, table)
+	}
+
+	return tables
 }
 
 // Restart a sequence with a new value

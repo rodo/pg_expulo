@@ -110,6 +110,15 @@ func main() {
 	dbDst := connectDb(conxDestination)
 	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
 
+	result, nonExistTable := checkConfigTables(config.Tables, getExistingTables(dbSrc))
+	if !result {
+		log.Fatal(fmt.Sprintf("Table %s does not exist in source database, check the configuration", nonExistTable))
+	}
+	result, nonExistTable = checkConfigTables(config.Tables, getExistingTables(dbSrc))
+	if !result {
+		log.Fatal(fmt.Sprintf("Table %s does not exist in target database, check the configuration", nonExistTable))
+	}
+
 	// Extend the configuration with information at schema level in database
 	sequencesArr, sequencesMap := getSequencesInfo(dbDst)
 	config = getInfoFromDatabases(config, sequencesArr)

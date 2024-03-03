@@ -7,6 +7,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 )
 
 // Read configuration file in json from disk
@@ -85,4 +86,19 @@ func getCols(conf Table, columName string) (Column, bool) {
 
 	}
 	return result, found
+}
+
+// Check if all tables defined in configuration exist in the database
+func checkConfigTables(configTables []Table, existingTables []string) (bool, string) {
+	result := true
+	var tf string
+	for _, t := range configTables {
+		tf = fullTableName(t.Schema, t.Name)
+		if slices.Contains(existingTables, tf) {
+			result = true
+		} else {
+			return false, tf
+		}
+	}
+	return result, ""
 }
