@@ -1,7 +1,10 @@
 package main
 
 import (
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // toolPat() without one SQL function at the end
@@ -116,4 +119,62 @@ func TestToolPatOnlyFunction(t *testing.T) {
 	if result != want {
 		t.Fatalf("Return %s in place of %s", result, want)
 	}
+}
+
+// getEnvVariable returns an well set variable
+func TestGetEnvVariableSuccess(t *testing.T) {
+	// Set up the environment variable for testing
+	expectedValue := "test_value"
+	envVarName := "TEST_VAR"
+	err := os.Setenv(envVarName, expectedValue)
+	assert.NoError(t, err, "Error setting up test environment")
+
+	// Call the function being tested
+	result := getEnvVariable(envVarName)
+
+	// Assert that the result matches the expected value
+	assert.Equal(t, expectedValue, result, "Result does not match expected value")
+
+	// Clean up the environment variable after the test
+	err = os.Unsetenv(envVarName)
+	assert.NoError(t, err, "Error cleaning up test environment")
+
+}
+
+// getEnvVariable returns an well set variable
+func TestReadEnvSuccess(t *testing.T) {
+	// Set up the environment variable for testing
+	expectedValue := ConnectionParameters{"host", "port", "user", "pass", "db"}
+	var err error
+
+	err = os.Setenv("PGFOOHOST", "host")
+	assert.NoError(t, err, "Error setting up test environment")
+	err = os.Setenv("PGFOOPORT", "port")
+	assert.NoError(t, err, "Error setting up test environment")
+	err = os.Setenv("PGFOOUSER", "user")
+	assert.NoError(t, err, "Error setting up test environment")
+	err = os.Setenv("PGFOOPASSWORD", "pass")
+	assert.NoError(t, err, "Error setting up test environment")
+	err = os.Setenv("PGFOODATABASE", "db")
+	assert.NoError(t, err, "Error setting up test environment")
+
+	// Call the function being tested
+	result := readEnv("FOO")
+
+	// Assert that the result matches the expected value
+	assert.Equal(t, expectedValue, result, "Result does not match expected value")
+
+	// Clean up the environment variable after the test
+	err = os.Unsetenv("PGFOOHOST")
+	assert.NoError(t, err, "Error setting up test environment")
+	err = os.Unsetenv("PGFOOPORT")
+	assert.NoError(t, err, "Error setting up test environment")
+	err = os.Unsetenv("PGFOOUSER")
+	assert.NoError(t, err, "Error setting up test environment")
+	err = os.Unsetenv("PGFOOPASSWORD")
+	assert.NoError(t, err, "Error setting up test environment")
+	err = os.Unsetenv("PGFOODATABASE")
+	assert.NoError(t, err, "Error setting up test environment")
+
+	assert.NoError(t, err, "Error cleaning up test environment")
 }

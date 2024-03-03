@@ -19,7 +19,11 @@ func randomIntMinMax(min int, max int) int {
 }
 
 func randomInt32() int32 {
-	return rand.Int31n(100)
+	return rand.Int31()
+}
+
+func randomInt64() int64 {
+	return rand.Int63()
 }
 
 func randomFloat() float32 {

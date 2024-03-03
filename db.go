@@ -13,6 +13,9 @@ import (
 //go:embed sql/fetch_foreign_keys.sql
 var qryFetchForeignKeys string
 
+//go:embed sql/tables.sql
+var qryTables string
+
 // Restart all the sequences
 func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 	for _, s := range *sequences {
@@ -20,6 +23,24 @@ func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 			resetSeq(dbConn, s.SequenceName, s.LastValueUsed)
 		}
 	}
+}
+
+// Restart a sequence with a new value
+func getExistingTables(dbConn *sql.DB) []string {
+	var tables []string
+
+	rows, err := dbConn.Query(qryTables)
+	if err != nil {
+		log.Fatal("Error executing query in GetExistingTables:", err)
+	}
+
+	for rows.Next() {
+		var table string
+		err = rows.Scan(&table)
+		tables = append(tables, table)
+	}
+
+	return tables
 }
 
 // Restart a sequence with a new value
@@ -34,39 +55,6 @@ func resetSeq(dbConn *sql.DB, seq string, newvalue int64) {
 	if err != nil {
 		log.Fatal("Error executing query in GetSeqLastValue:", err)
 	}
-}
-
-// Retreive the last used value in a sequence
-func getSeqLastValue(dbConn *sql.Tx, seq string) (int64, error) {
-	var err error
-
-	query := "SELECT last_value FROM %s"
-
-	lastValue := int64(0)
-
-	qry := fmt.Sprintf(query, seq)
-
-	log.Debug(qry)
-
-	rows, err := dbConn.Query(qry)
-	if err != nil {
-		log.Fatal("Error executing query in GetSeqLastValue:", err)
-	}
-
-	for rows.Next() {
-		err = rows.Scan(&lastValue)
-		if err != nil {
-			log.Fatal("Error on row", err)
-		}
-		log.Debug(fmt.Sprintf("row values : %s %d", seq, lastValue))
-
-	}
-	if err = rows.Err(); err != nil {
-		log.Fatal("Error reading rows :", err)
-	}
-	rows.Close()
-
-	return lastValue, err
 }
 
 func getDsn(host string, port string, user string, pass string, db string, version string) (string, string) {

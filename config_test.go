@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // The column exist
@@ -31,5 +33,31 @@ func TestGetColsNotFound(t *testing.T) {
 	if found {
 		t.Fatalf("getCols does not return valid dsn")
 	}
+
+}
+
+// The table exists
+func TestCheckConfigTablesExists(t *testing.T) {
+
+	configTables := []Table{{"boat", "sea.boat", []Column{}, "sea", "delete", "id < 42", ""}}
+	existingTables := []string{"sea.skipper", "sea.boat"}
+
+	existing, table := checkConfigTables(configTables, existingTables)
+
+	assert.Equal(t, true, existing, "The table exists")
+	assert.Equal(t, "", table, "The table exists")
+
+}
+
+// The table does not exist
+func TestCheckConfigTablesNotExists(t *testing.T) {
+
+	configTables := []Table{{"boat", "sea.boat", []Column{}, "sea", "delete", "id < 42", ""}}
+	existingTables := []string{"sea.fish"}
+
+	existing, table := checkConfigTables(configTables, existingTables)
+
+	assert.Equal(t, false, existing, "The table does not exist")
+	assert.Equal(t, "sea.boat", table, "The table does not exist")
 
 }

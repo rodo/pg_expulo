@@ -110,6 +110,15 @@ func main() {
 	dbDst := connectDb(conxDestination)
 	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
 
+	result, nonExistTable := checkConfigTables(config.Tables, getExistingTables(dbSrc))
+	if !result {
+		log.Fatal(fmt.Sprintf("Table %s does not exist in source database, check the configuration", nonExistTable))
+	}
+	result, nonExistTable = checkConfigTables(config.Tables, getExistingTables(dbDst))
+	if !result {
+		log.Fatal(fmt.Sprintf("Table %s does not exist in target database, check the configuration", nonExistTable))
+	}
+
 	// Extend the configuration with information at schema level in database
 	sequencesArr, sequencesMap := getSequencesInfo(dbDst)
 	config = getInfoFromDatabases(config, sequencesArr)
@@ -201,7 +210,7 @@ func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery stri
 	nbinsert := 0
 	var errCode string
 	var colnames []string
-	var colparam []string
+	var stmtParam []string
 
 	initValues := make(map[string]int64)
 
@@ -226,7 +235,7 @@ func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery stri
 		}
 		rows.Scan(columnPointers...)
 
-		colparam = []string{}
+		stmtParam = []string{}
 		var colValues []interface{}
 
 		// Manage what we do it data here
@@ -243,7 +252,7 @@ func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery stri
 			// in the INSERT statement
 
 			// TODO refacto this function
-			colValues, colparam, nbColumnModified, colnames = fillColumn(t, col, cfvalue, colValues, colparam, nbColumnModified, cols, colnames, i, columns, sequencesMap, foreignKeys, initValues)
+			fillColumn(t, col, cfvalue, &colValues, &stmtParam, &nbColumnModified, cols, &colnames, i, columns, sequencesMap, foreignKeys, initValues)
 
 		}
 
@@ -254,12 +263,12 @@ func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery stri
 		if nbinsert > batchSize-1 {
 			log.Debug(fmt.Sprintf("Insert %d rows in table %s", nbinsert, t.Name))
 			nbinsert = 0
-			_, errCode = insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
+			_, errCode = insertMultiData(txDst, tableFullname, colnames, stmtParam, multirows)
 			multirows = multirows[:0]
 		}
 	}
 	if nbinsert > 0 {
-		_, errCode = insertMultiData(txDst, tableFullname, colnames, colparam, multirows)
+		_, errCode = insertMultiData(txDst, tableFullname, colnames, stmtParam, multirows)
 	}
 
 	return count, errCode
