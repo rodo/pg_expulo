@@ -114,7 +114,7 @@ func main() {
 	if !result {
 		log.Fatal(fmt.Sprintf("Table %s does not exist in source database, check the configuration", nonExistTable))
 	}
-	result, nonExistTable = checkConfigTables(config.Tables, getExistingTables(dbSrc))
+	result, nonExistTable = checkConfigTables(config.Tables, getExistingTables(dbDst))
 	if !result {
 		log.Fatal(fmt.Sprintf("Table %s does not exist in target database, check the configuration", nonExistTable))
 	}
