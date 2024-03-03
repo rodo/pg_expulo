@@ -14,17 +14,17 @@ func (genericFake) FakeName() string      { return faker.Name() }
 func (genericFake) FakeFirstName() string { return faker.FirstName() }
 
 //gocyclo:ignore
-func fillColumn(table Table, col Column, cfvalue string, colvalue []interface{}, colparam []string, nbcol int, cols []interface{}, colnames []string, i int, columns []string, sequences *map[string]Sequence, foreignKeys map[string]string, initValues map[string]int64) ([]interface{}, []string, int, []string) {
+func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{}, colparam *[]string, nbColumnModified *int, cols []interface{}, colNames *[]string, i int, columns []string, sequences *map[string]Sequence, foreignKeys map[string]string, initValues map[string]int64) {
 
 	x := int64(0)
 
 	// The column is ignored in configuration
 	if cfvalue == "ignore" {
-		return colvalue, colparam, nbcol, colnames
+		return
 	}
 
 	// The column is NOT ignored in configuration
-	colnames = append(colnames, columns[i])
+	*colNames = append(*colNames, columns[i])
 
 	longv := fmt.Sprintf("%s******", cfvalue)
 	if longv[:4] == "Fake" {
@@ -32,12 +32,12 @@ func fillColumn(table Table, col Column, cfvalue string, colvalue []interface{},
 		m := v.MethodByName(cfvalue)
 		res := m.Call(nil)
 
-		colvalue = append(colvalue, fmt.Sprintf("%s", res[0]))
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, fmt.Sprintf("%s", res[0]))
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 
-		nbcol++
+		*nbColumnModified++
 
-		return colvalue, colparam, nbcol, colnames
+		return
 	}
 
 	// Assign the target value
@@ -51,12 +51,12 @@ func fillColumn(table Table, col Column, cfvalue string, colvalue []interface{},
 
 		// Deal with null in foreign key
 		if _, ok := cols[i].(int64); ok {
-			colvalue = append(colvalue, cols[i].(int64)+val)
+			*colValues = append(*colValues, cols[i].(int64)+val)
 		} else {
-			colvalue = append(colvalue, cols[i])
+			*colValues = append(*colValues, cols[i])
 		}
 
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "serial":
 		// Set the column with NULL values
 		if val, ok := cols[i].(int64); ok {
@@ -69,42 +69,47 @@ func fillColumn(table Table, col Column, cfvalue string, colvalue []interface{},
 			(*sequences)[col.SequenceName] = seq
 		}
 
-		colvalue = append(colvalue, x)
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, x)
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 
 	case "null":
 		// Set the column with NULL values
-		colvalue = append(colvalue, nil)
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, nil)
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "mask":
-		colvalue = append(colvalue, mask())
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, mask())
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomInt":
-		colvalue = append(colvalue, randomInt())
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, randomInt())
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
+	case "randomInt32":
+		*colValues = append(*colValues, randomInt32())
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
+	case "randomFloat64":
+		*colValues = append(*colValues, randomFloat64())
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomIntMinMax":
-		colvalue = append(colvalue, randomIntMinMax(col.Min, col.Max))
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, randomIntMinMax(col.Min, col.Max))
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomFloat":
-		colvalue = append(colvalue, randomFloat())
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, randomFloat())
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomString":
-		colvalue = append(colvalue, randomString())
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, randomString())
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "md5":
-		colvalue = append(colvalue, md5signature(fmt.Sprintf("%v", cols[i])))
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, md5signature(fmt.Sprintf("%v", cols[i])))
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomTimeTZ":
-		colvalue = append(colvalue, randomTimeTZ(col.Timezone))
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, randomTimeTZ(col.Timezone))
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "sql":
-		nbcol--
-		colparam = append(colparam, col.SQLFunction)
+		*nbColumnModified--
+		*colparam = append(*colparam, col.SQLFunction)
 	default:
-		colvalue = append(colvalue, cols[i])
-		colparam = append(colparam, fmt.Sprintf("$%d", nbcol))
+		*colValues = append(*colValues, cols[i])
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	}
-	nbcol++
+	*nbColumnModified++
 
-	return colvalue, colparam, nbcol, colnames
 }

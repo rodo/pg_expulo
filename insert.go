@@ -32,7 +32,7 @@ func insertMultiData(dbDst *sql.Tx, tableFullname string, colnames []string, col
 
 		if pqErr, ok := errors.Cause(err).(*pq.Error); ok {
 			log.Debug(pqErr.Code)
-			errCode = fmt.Sprintf("%s", pqErr.Code)
+			errCode = string(pqErr.Code)
 		}
 
 		log.Debug("Error :", err)
