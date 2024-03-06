@@ -22,8 +22,7 @@
          "filter": "profile='public'",
          "columns": [
              { "name": "id",   "generator": "serial" },
-             { "name": "name", "generator": "null"
-             }
+             { "name": "name", "generator": "null" }
          ]
         },
         {"name": "results",
@@ -52,8 +51,8 @@
              {
                  "name": "age",
                  "generator": "randomIntMinMax",
-                 "min": 10,
-                 "max": 84
+                 "min": 42,
+                 "max": 42
              },
              {
                  "name": "updated_at",

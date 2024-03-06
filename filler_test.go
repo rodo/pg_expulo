@@ -8,9 +8,7 @@ import (
 )
 
 func TestFakeEmail(t *testing.T) {
-
 	result := genericFake{}.FakeEmail()
-
 	assert.NotNil(t, result, "Expected non-nil result")
 
 	// Assert that result is of type string
@@ -18,9 +16,7 @@ func TestFakeEmail(t *testing.T) {
 }
 
 func TestFakeName(t *testing.T) {
-
 	result := genericFake{}.FakeName()
-
 	assert.NotNil(t, result, "Expected non-nil result")
 
 	// Assert that result is of type string

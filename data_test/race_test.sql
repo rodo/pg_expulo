@@ -10,5 +10,6 @@ SELECT results_eq(
     'SELECT 4::int',
     'There is 4 rows in table race');
 
+
 SELECT * FROM finish();
 ROLLBACK;
