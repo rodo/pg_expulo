@@ -113,3 +113,14 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 	*nbColumnModified++
 
 }
+
+// All values we accept in configuration file
+func allowedGenerators() []string {
+
+	ag := []string{"FakeEmail", "FakeFirstName", "FakeName",
+		"foreign_key", "ignore", "null", "mask", "md5",
+		"randomFloat", "randomFloat32", "randomFloat64",
+		"randomInt", "randomInt32", "randomInt64", "randomIntMinMax",
+		"randomString", "randomTZ", "serial", "sql"}
+	return ag
+}

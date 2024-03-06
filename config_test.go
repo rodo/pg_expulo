@@ -42,7 +42,7 @@ func TestCheckConfigTablesExists(t *testing.T) {
 	configTables := []Table{{"boat", "sea.boat", []Column{}, "sea", "delete", "id < 42", ""}}
 	existingTables := []string{"sea.skipper", "sea.boat"}
 
-	existing, table := checkConfigTables(configTables, existingTables)
+	existing, table := checkConfigTables(configTables, existingTables, "foobar")
 
 	assert.Equal(t, true, existing, "The table exists")
 	assert.Equal(t, "", table, "The table exists")
@@ -55,9 +55,9 @@ func TestCheckConfigTablesNotExists(t *testing.T) {
 	configTables := []Table{{"boat", "sea.boat", []Column{}, "sea", "delete", "id < 42", ""}}
 	existingTables := []string{"sea.fish"}
 
-	existing, table := checkConfigTables(configTables, existingTables)
+	existing, table := checkConfigTables(configTables, existingTables, "foobar")
 
 	assert.Equal(t, false, existing, "The table does not exist")
-	assert.Equal(t, "sea.boat", table, "The table does not exist")
+	assert.Equal(t, "The table sea.boat does not exist in foobar database, check the configuration", table, "The table does not exist")
 
 }

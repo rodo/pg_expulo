@@ -9,33 +9,19 @@ import (
 	"github.com/go-faker/faker/v4"
 )
 
-func randomInt() int32 {
-	return rand.Int31()
-}
+func mask() string { return "********" }
+
+func randomFloat() float32   { return rand.Float32() }
+func randomFloat32() float32 { return rand.Float32() }
+func randomFloat64() float64 { return rand.Float64() }
+
+func randomInt() int32   { return rand.Int31() }
+func randomInt32() int32 { return rand.Int31() }
+func randomInt64() int64 { return rand.Int63() }
 
 func randomIntMinMax(min int, max int) int {
 	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(max-min+1) + min
-}
-
-func randomInt32() int32 {
-	return rand.Int31()
-}
-
-func randomInt64() int64 {
-	return rand.Int63()
-}
-
-func randomFloat() float32 {
-	return rand.Float32()
-}
-
-func randomFloat32() float32 {
-	return rand.Float32()
-}
-
-func randomFloat64() float64 {
-	return rand.Float64()
 }
 
 type someStruct struct {
@@ -49,10 +35,6 @@ func randomString() string {
 		fmt.Println(err)
 	}
 	return a.String
-}
-
-func mask() string {
-	return "********"
 }
 
 func md5signature(alpha string) string {

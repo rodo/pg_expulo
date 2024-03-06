@@ -89,7 +89,7 @@ func getCols(conf Table, columName string) (Column, bool) {
 }
 
 // Check if all tables defined in configuration exist in the database
-func checkConfigTables(configTables []Table, existingTables []string) (bool, string) {
+func checkConfigTables(configTables []Table, existingTables []string, dbname string) (bool, string) {
 	result := true
 	var tf string
 	for _, t := range configTables {
@@ -97,8 +97,32 @@ func checkConfigTables(configTables []Table, existingTables []string) (bool, str
 		if slices.Contains(existingTables, tf) {
 			result = true
 		} else {
-			return false, tf
+			return false, fmt.Sprintf("The table %s does not exist in %s database, check the configuration", tf, dbname)
 		}
 	}
 	return result, ""
+}
+
+// Check if generators are well written
+func checkConfigGenerators(configTables []Table, allowed []string) (bool, string) {
+	result := true
+
+	for _, t := range configTables {
+		for _, c := range t.Columns {
+			if slices.Contains(allowed, c.Generator) {
+				result = true
+			} else {
+				return false, fmt.Sprintf("The generator %s does not exist, check the configuration", c.Generator)
+			}
+		}
+	}
+	return result, ""
+}
+
+func checkConfig(result bool, message string) bool {
+
+	if !result {
+		log.Fatal(message)
+	}
+	return result
 }

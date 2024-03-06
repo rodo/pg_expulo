@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices"
 )
 
 func TestFakeEmail(t *testing.T) {
@@ -33,4 +34,11 @@ func TestFakeFirstName(t *testing.T) {
 
 	// Assert that result is of type string
 	assert.IsType(t, "", result, "Expected result of type string")
+}
+
+func TestAllowedGenerators(t *testing.T) {
+	result := allowedGenerators()
+
+	// Assert that result is of type []string
+	assert.True(t, slices.Contains(result, "serial"), "Expected result of type string")
 }
