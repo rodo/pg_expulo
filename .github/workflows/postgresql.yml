@@ -49,6 +49,9 @@ jobs:
           - 5432:5432
 
     steps:
+    - name: Install pg_tap / pg_prove
+      run: sudo apt-get install libtap-parser-sourcehandler-pgtap-perl
+
     - name: Checkout repo
       uses: actions/checkout@v4
 
