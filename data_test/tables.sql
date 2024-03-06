@@ -6,6 +6,16 @@ DROP TABLE IF EXISTS town;
 DROP TABLE IF EXISTS boat;
 DROP TABLE IF EXISTS skipper;
 DROP TABLE IF EXISTS cheater;
+DROP TABLE IF EXISTS architect;
+
+-- no special config for this table
+-- will inherited from default
+CREATE TABLE architect (
+  id serial PRIMARY KEY,
+  name text,
+  guid uuid
+);
+
 
 CREATE TABLE boat (
   id serial PRIMARY KEY,
@@ -14,7 +24,7 @@ CREATE TABLE boat (
   updated_at timestamp without time zone,
   length integer,
   class_code varchar(10),
-  architect text
+  architect int REFERENCES architect(id)
 );
 
 CREATE TABLE skipper (

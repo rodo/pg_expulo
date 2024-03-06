@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/go-faker/faker/v4"
-	//	log "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type genericFake struct{}
@@ -22,6 +22,17 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 	// The column is ignored in configuration
 	if cfvalue == "ignore" {
 		return
+	}
+
+	// if nothing is set in the table section for the column,
+	// use the default generator from config.Defaults
+	if cfvalue == "notfound" {
+
+		found, generator := getDefaultGeneratorByName(columns[i])
+		if found {
+			cfvalue = generator
+			log.Debug(fmt.Sprintf("Use %s from default for %s", cfvalue, columns[i]))
+		}
 	}
 
 	// The column is NOT ignored in configuration
@@ -123,7 +134,7 @@ func setRandom(pnull bool, actualValue interface{}, newValue interface{}) interf
 func allowedGenerators() []string {
 
 	ag := []string{"FakeEmail", "FakeFirstName", "FakeName",
-		"foreign_key", "ignore", "null", "mask", "md5",
+		"foreign_key", "ignore", "keep", "null", "mask", "md5",
 		"randomFloat", "randomFloat32", "randomFloat64",
 		"randomInt", "randomInt32", "randomInt64", "randomIntMinMax",
 		"randomString", "randomTZ", "serial", "sql"}
