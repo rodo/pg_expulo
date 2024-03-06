@@ -24,6 +24,8 @@ CREATE TABLE skipper (
   age int,
   created_at timestamp with time zone default now(),
   updated_at timestamp without time zone
+  town text,
+  country text
 );
 
 /* We sync only race with profile=public
