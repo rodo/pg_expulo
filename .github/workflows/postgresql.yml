@@ -33,7 +33,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres
+        image: rodoq/postgres-pgtap:16
 
         env:
           POSTGRES_PASSWORD: postgres
@@ -49,6 +49,9 @@ jobs:
           - 5432:5432
 
     steps:
+    - name: Install pg_tap / pg_prove
+      run: sudo apt-get install libtap-parser-sourcehandler-pgtap-perl
+
     - name: Checkout repo
       uses: actions/checkout@v4
 
@@ -59,6 +62,11 @@ jobs:
 
     - name: Change file permissions on pg_expulo
       run: chmod +x pg_expulo
+
+    - name: install pgtap on template1
+      run: psql --host localhost --username postgres --dbname template1 -c "CREATE EXTENSION pgtap"
+      env:
+        PGPASSWORD: postgres
 
     - name: create db source
       run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE source'
@@ -78,32 +86,6 @@ jobs:
     - name: fill db target
       run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/data-target.sql
 
-    - name: install pg_prove
-      run: sudo cpan TAP::Parser::SourceHandler::pgTAP
-      env:
-        SHELL: /bin/bash
-
-    - name: install postgres-server-dev-14
-      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-server-dev-14
-
-    - name: Checkout pgtap
-      uses: actions/checkout@v4
-      with:
-        repository: theory/pgtap
-        path: pgtap
-        ref: v1.3.2
-
-    - name: install pgtap on source
-      working-directory: pgtap
-      run: make && psql --host localhost --username postgres --dbname source --file sql/pgtap.sql
-      env:
-        PGPASSWORD: postgres
-
-    - name: install pgtap on target
-      working-directory: pgtap
-      run: psql --host localhost --username postgres --dbname target --file sql/pgtap.sql
-      env:
-        PGPASSWORD: postgres
 
     - name: run binary
       run: ./pg_expulo --config samples/config-ci-full.json
@@ -139,6 +121,36 @@ jobs:
         PGDSTDATABASE: target
 
     - name: check results in target
+      run: pg_prove -v --host localhost --dbname target --username postgres data_test/tables_empty.sql
+      env:
+        PGPASSWORD: postgres
+
+    - name: create structure source
+      run: psql "postgres://postgres:postgres@localhost:5432/source" -f data_test/tables.sql
+
+    - name: create structure target
+      run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/tables.sql
+
+    - name: check results in target, must be empty
+      run: pg_prove -v --host localhost --dbname target --username postgres data_test/tables_empty.sql
+      env:
+        PGPASSWORD: postgres
+
+    - name: run binary with try option
+      run: ./pg_expulo --config samples/config-ci-full.json --try
+      env:
+        PGSRCHOST: localhost
+        PGSRCPORT: 5432
+        PGSRCUSER: postgres
+        PGSRCPASSWORD: postgres
+        PGSRCDATABASE: source
+        PGDSTHOST: localhost
+        PGDSTPORT: 5432
+        PGDSTUSER: postgres
+        PGDSTPASSWORD: postgres
+        PGDSTDATABASE: target
+
+    - name: check results in target, still empty
       run: pg_prove -v --host localhost --dbname target --username postgres data_test/tables_empty.sql
       env:
         PGPASSWORD: postgres
