@@ -61,6 +61,10 @@
                  "function": "now()"
              },
              {
+                 "name": "town",
+                 "generator": "md5"
+             },
+             {
                  "name": "country",
                  "generator": "randomString",
                  "preserve_null": true

@@ -38,7 +38,26 @@ func TestFakeFirstName(t *testing.T) {
 
 func TestAllowedGenerators(t *testing.T) {
 	result := allowedGenerators()
-
 	// Assert that result is of type []string
 	assert.True(t, slices.Contains(result, "serial"), "Expected result of type string")
+}
+
+func TestSetRandomTrue(t *testing.T) {
+	result := setRandom(true, 10, 12)
+	assert.Equal(t, result, 12, "Preserve null with non null value")
+}
+
+func TestSetRandomFalse(t *testing.T) {
+	result := setRandom(false, 10, 12)
+	assert.Equal(t, result, 12, "Do not preserve null with non null value")
+}
+
+func TestSetRandomNullTrue(t *testing.T) {
+	result := setRandom(true, nil, 12)
+	assert.Equal(t, result, nil, "Preserve null value with null value")
+}
+
+func TestSetRandomNullFalse(t *testing.T) {
+	result := setRandom(false, nil, 17)
+	assert.Equal(t, result, 17, "Do not preserve null with null value")
 }

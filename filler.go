@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/go-faker/faker/v4"
-	log "github.com/sirupsen/logrus"
+	//	log "github.com/sirupsen/logrus"
 )
 
 type genericFake struct{}
@@ -43,11 +43,13 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 
 	// Assign the target value
 	switch cfvalue {
+	case "null":
+		// Set the column with NULL values
+		*colValues = append(*colValues, nil)
+		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "foreign_key":
-
 		colkey := fmt.Sprintf("%s.%s", table.FullName, col.Name)
 		valkey := foreignKeys[colkey]
-
 		val := initValues[valkey]
 
 		// Deal with null in foreign key
@@ -72,36 +74,30 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 
 		*colValues = append(*colValues, x)
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
-
-	case "null":
-		// Set the column with NULL values
-		*colValues = append(*colValues, nil)
-		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "mask":
-		*colValues = append(*colValues, mask())
+		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], mask()))
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomInt":
-		*colValues = append(*colValues, randomInt())
+		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomInt()))
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomInt32":
-		*colValues = append(*colValues, randomInt32())
+
+		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomInt32()))
+
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomFloat64":
-		*colValues = append(*colValues, randomFloat64())
+
+		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomFloat64()))
+
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomIntMinMax":
-		*colValues = append(*colValues, randomIntMinMax(col.Min, col.Max))
+		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomIntMinMax(col.Min, col.Max)))
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomFloat":
-		*colValues = append(*colValues, randomFloat())
+		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomFloat()))
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomString":
-		log.Debug(col.PreserveNull)
-		if cols[i] == nil && col.PreserveNull {
-			*colValues = append(*colValues, cols[i])
-		} else {
-			*colValues = append(*colValues, randomString())
-		}
+		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomString()))
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "md5":
 		*colValues = append(*colValues, md5signature(fmt.Sprintf("%v", cols[i])))
@@ -118,6 +114,13 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 	}
 	*nbColumnModified++
 
+}
+
+func setRandom(pnull bool, actualValue interface{}, newValue interface{}) interface{} {
+	if actualValue == nil && pnull {
+		return nil
+	}
+	return newValue
 }
 
 // All values we accept in configuration file
