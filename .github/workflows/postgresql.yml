@@ -63,6 +63,11 @@ jobs:
     - name: Change file permissions on pg_expulo
       run: chmod +x pg_expulo
 
+    - name: install pgtap on template1
+      run: psql --host localhost --username postgres --dbname template1 -c "CREATE EXTENSION pgtap"
+      env:
+        PGPASSWORD: postgres
+
     - name: create db source
       run: psql "postgres://postgres:postgres@localhost:5432/postgres" -c 'CREATE DATABASE source'
 
@@ -81,15 +86,6 @@ jobs:
     - name: fill db target
       run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/data-target.sql
 
-    - name: install pgtap on source database
-      run: psql --host localhost --username postgres --dbname source -c "CREATE EXTENSION pgtap"
-      env:
-        PGPASSWORD: postgres
-
-    - name: install pgtap on target database
-      run: psql --host localhost --username postgres --dbname target -c "CREATE EXTENSION pgtap"
-      env:
-        PGPASSWORD: postgres
 
     - name: run binary
       run: ./pg_expulo --config samples/config-ci-full.json
@@ -125,6 +121,36 @@ jobs:
         PGDSTDATABASE: target
 
     - name: check results in target
+      run: pg_prove -v --host localhost --dbname target --username postgres data_test/tables_empty.sql
+      env:
+        PGPASSWORD: postgres
+
+    - name: create structure source
+      run: psql "postgres://postgres:postgres@localhost:5432/source" -f data_test/tables.sql
+
+    - name: create structure target
+      run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/tables.sql
+
+    - name: check results in target, must be empty
+      run: pg_prove -v --host localhost --dbname target --username postgres data_test/tables_empty.sql
+      env:
+        PGPASSWORD: postgres
+
+    - name: run binary with try option
+      run: ./pg_expulo --config samples/config-ci-full.json --try
+      env:
+        PGSRCHOST: localhost
+        PGSRCPORT: 5432
+        PGSRCUSER: postgres
+        PGSRCPASSWORD: postgres
+        PGSRCDATABASE: source
+        PGDSTHOST: localhost
+        PGDSTPORT: 5432
+        PGDSTUSER: postgres
+        PGDSTPASSWORD: postgres
+        PGDSTDATABASE: target
+
+    - name: check results in target, still empty
       run: pg_prove -v --host localhost --dbname target --username postgres data_test/tables_empty.sql
       env:
         PGPASSWORD: postgres
