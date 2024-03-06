@@ -78,13 +78,12 @@ jobs:
     - name: fill db target
       run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/data-target.sql
 
-    - name: install pgtap on source
+    - name: install pgtap on source database
       run: psql --host localhost --username postgres --dbname source -c "CREATE EXTENSION pgtap"
       env:
         PGPASSWORD: postgres
 
-    - name: install pgtap on target
-      working-directory: pgtap
+    - name: install pgtap on target database
       run: psql --host localhost --username postgres --dbname target -c "CREATE EXTENSION pgtap"
       env:
         PGPASSWORD: postgres
