@@ -42,6 +42,7 @@ type Column struct {
 	SQLFunction  string `json:"function"`
 	SequenceName string
 	SeqLastValue int64
+	PreserveNull bool `json:"preserve_null"`
 }
 
 // Sequence with related attributes
@@ -142,7 +143,7 @@ func main() {
 	deferForeignKeys(dbDst, triggerConstraints)
 	purgeTarget(config, txDst)
 
-	// if command line parameter set do purge and exit
+	// if command line parameter is set to purge, do purge and exit
 	if purgeOnly {
 		log.Debug("Exit on option, purge")
 		closeTx(txDst, tryOnly)

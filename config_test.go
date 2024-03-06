@@ -9,7 +9,7 @@ import (
 // The column exist
 func TestGetCols(t *testing.T) {
 
-	column := Column{"id", "random", 0, 42, "UTC", "getRandomString()", "id_seq", 1}
+	column := Column{"id", "random", 0, 42, "UTC", "getRandomString()", "id_seq", 1, false}
 
 	conf := Table{"boat", "sea.boat", []Column{column}, "sea", "delete", "id < 42", ""}
 
@@ -24,7 +24,7 @@ func TestGetCols(t *testing.T) {
 // The column does not exist
 func TestGetColsNotFound(t *testing.T) {
 
-	column := Column{"id", "random", 0, 42, "UTC", "getRandomString()", "id_seq", 3}
+	column := Column{"id", "random", 0, 42, "UTC", "getRandomString()", "id_seq", 3, false}
 
 	conf := Table{"boat", "sea.boat", []Column{column}, "sea", "delete", "id < 42", ""}
 

@@ -23,7 +23,7 @@ CREATE TABLE skipper (
   email text,
   age int,
   created_at timestamp with time zone default now(),
-  updated_at timestamp without time zone
+  updated_at timestamp without time zone,
   town text,
   country text
 );
