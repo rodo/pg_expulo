@@ -81,12 +81,9 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomInt()))
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomInt32":
-
 		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomInt32()))
-
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomFloat64":
-
 		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomFloat64()))
 
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
@@ -113,7 +110,6 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	}
 	*nbColumnModified++
-
 }
 
 func setRandom(pnull bool, actualValue interface{}, newValue interface{}) interface{} {
