@@ -33,7 +33,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres
+        image: rodoq/postgres-pgtap:16
 
         env:
           POSTGRES_PASSWORD: postgres
@@ -49,6 +49,9 @@ jobs:
           - 5432:5432
 
     steps:
+    - name: Install pg_tap / pg_prove
+      run: sudo apt-get install libtap-parser-sourcehandler-pgtap-perl
+
     - name: Checkout repo
       uses: actions/checkout@v4
 
@@ -78,30 +81,13 @@ jobs:
     - name: fill db target
       run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/data-target.sql
 
-    - name: install pg_prove
-      run: sudo cpan TAP::Parser::SourceHandler::pgTAP
-      env:
-        SHELL: /bin/bash
-
-    - name: install postgres-server-dev-14
-      run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-server-dev-14
-
-    - name: Checkout pgtap
-      uses: actions/checkout@v4
-      with:
-        repository: theory/pgtap
-        path: pgtap
-        ref: v1.3.2
-
-    - name: install pgtap on source
-      working-directory: pgtap
-      run: make && psql --host localhost --username postgres --dbname source --file sql/pgtap.sql
+    - name: install pgtap on source database
+      run: psql --host localhost --username postgres --dbname source -c "CREATE EXTENSION pgtap"
       env:
         PGPASSWORD: postgres
 
-    - name: install pgtap on target
-      working-directory: pgtap
-      run: psql --host localhost --username postgres --dbname target --file sql/pgtap.sql
+    - name: install pgtap on target database
+      run: psql --host localhost --username postgres --dbname target -c "CREATE EXTENSION pgtap"
       env:
         PGPASSWORD: postgres
 
