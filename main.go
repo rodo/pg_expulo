@@ -13,7 +13,8 @@ import (
 
 // Config store the whole configuration read from json file
 type Config struct {
-	Tables []Table `json:"tables"`
+	Tables   []Table  `json:"tables"`
+	Defaults []Column `json:"defaults"`
 }
 
 // Columns contains a collection of Column
@@ -84,12 +85,14 @@ func init() {
 	}
 }
 
+var config Config
+
 func main() {
 	// Parse command line arguments
 	flagParse()
 
 	// Read the configuration
-	config := readConfig(configFile)
+	config = readConfig(configFile)
 	log.Debug("Read config done")
 	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
@@ -99,17 +102,17 @@ func main() {
 
 	// Construct connection string
 	conxSource, dsnSrc := getDsn(conns.Host, conns.Port, conns.User, conns.Pass, conns.Db, version)
-	conxDestination, dsnDst := getDsn(connt.Host, connt.Port, connt.User, connt.Pass, connt.Db, version)
+	conxTarget, dsnDst := getDsn(connt.Host, connt.Port, connt.User, connt.Pass, connt.Db, version)
 
-	// Connect to the database source
+	// Connect to the source database
 	log.Debug("Connect on source")
 	dbSrc := connectDb(conxSource)
 	log.Info(fmt.Sprintf("Use %s as source", dsnSrc))
 
-	// Connect to the database destination
-	log.Debug("Connect on destination")
-	dbDst := connectDb(conxDestination)
-	log.Info(fmt.Sprintf("Use %s as destination", dsnDst))
+	// Connect to the target database
+	log.Debug("Connect on target")
+	dbDst := connectDb(conxTarget)
+	log.Info(fmt.Sprintf("Use %s as target", dsnDst))
 
 	// checkConfig emits a log fatal level and exit
 	checkConfig(checkConfigTables(config.Tables, getExistingTables(dbSrc), "source"))
@@ -120,7 +123,7 @@ func main() {
 	sequencesArr, sequencesMap := getSequencesInfo(dbDst)
 	config = getInfoFromDatabases(config, sequencesArr)
 
-	// Start a transaction
+	// Start a transaction on target database
 	txDst, err := dbDst.Begin()
 	if err != nil {
 		log.Fatal("Error starting transaction: ", err)
@@ -132,14 +135,12 @@ func main() {
 		tableList = append(tableList, fullTableName(t.Schema, t.Name))
 	}
 
-	log.Debug("tableList contains : ", tableList)
-
 	foreignKeys := make(map[string]string)
 
 	// Read the foreign keys
 	triggerConstraints := getTriggerConstraints(dbDst, tableList, &foreignKeys)
 
-	// Delete data on destination tables
+	// Delete data on target tables
 	deferForeignKeys(dbDst, triggerConstraints)
 	purgeTarget(config, txDst)
 
@@ -151,17 +152,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	// List all tables in insert order
+	// Log all tables for debug purpose
 	for _, t := range config.Tables {
-		tableFullname := fullTableName(t.Schema, t.Name)
-		log.Debug(fmt.Sprintf("Will insert in : %s", tableFullname))
+		log.Debug(fmt.Sprintf("Will insert in : %s", t.FullName))
 	}
 
-	// Loop over all tables configured
+	// Loop over all configured tables
 	for _, t := range config.Tables {
-		tableFullname := fullTableName(t.Schema, t.Name)
 
-		srcQuery := fmt.Sprintf("SELECT * FROM %s WHERE true", tableFullname)
+		srcQuery := fmt.Sprintf("SELECT * FROM %s WHERE true", t.FullName)
 
 		// Filter the data on source to fetch a subset of rows in a table
 		if len(t.Filter) > 0 {
@@ -170,7 +169,7 @@ func main() {
 		startTime := time.Now()
 		nbrows, _ := doTable(dbSrc, dbDst, txDst, t, srcQuery, &sequencesMap, foreignKeys)
 		elapsedTime := time.Since(startTime)
-		log.Info(fmt.Sprintf("%s : inserted %d rows total in %s", tableFullname, nbrows, elapsedTime))
+		log.Info(fmt.Sprintf("%s : inserted %d rows total in %s", t.FullName, nbrows, elapsedTime))
 	}
 
 	if tryOnly {
@@ -194,9 +193,8 @@ func main() {
 }
 
 func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery string, sequencesMap *map[string]Sequence, foreignKeys map[string]string) (int, string) {
-	tableFullname := fullTableName(t.Schema, t.Name)
 
-	log.Info(fmt.Sprintf("%s : read data fom table", tableFullname))
+	log.Info(fmt.Sprintf("%s : read data fom table", t.FullName))
 
 	rows, columns := queryTableSource(dbSrc, srcQuery)
 
@@ -260,12 +258,12 @@ func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery stri
 		if nbinsert > batchSize-1 {
 			log.Debug(fmt.Sprintf("Insert %d rows in table %s", nbinsert, t.Name))
 			nbinsert = 0
-			_, errCode = insertMultiData(txDst, tableFullname, colnames, stmtParam, multirows)
+			_, errCode = insertMultiData(txDst, t.FullName, colnames, stmtParam, multirows)
 			multirows = multirows[:0]
 		}
 	}
 	if nbinsert > 0 {
-		_, errCode = insertMultiData(txDst, tableFullname, colnames, stmtParam, multirows)
+		_, errCode = insertMultiData(txDst, t.FullName, colnames, stmtParam, multirows)
 	}
 
 	return count, errCode

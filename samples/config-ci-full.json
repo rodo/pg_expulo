@@ -1,4 +1,7 @@
 {
+    "defaults":[
+        { "name": "name", "generator": "FakeName" }
+    ],
     "tables": [
         {"name": "boat",
          "schema": "public",
@@ -12,7 +15,7 @@
              },
              {
                  "name": "architect",
-                 "generator": "randomString"
+                 "generator": "foreign_key"
              }
          ]
         },
@@ -33,6 +36,15 @@
              { "name": "race_id", "generator": "foreign_key" }
          ]
         },
+        {"name": "architect",
+         "schema": "public",
+         "clean": "delete",
+         "comment": "no conf, all is inherited",
+         "columns": [
+             { "name": "id", "generator": "serial" }
+         ]
+        },
+
         {"name": "skipper",
          "schema": "public",
          "clean": "delete",
@@ -73,7 +85,11 @@
         {"schema": "public",
          "name": "town",
          "clean": "delete",
-         "deletion_filter": "area != 'South'"
+         "deletion_filter": "area != 'South'",
+         "columns": [
+             {
+                 "name": "name", "generator": "keep"
+             }]
         }
     ]
 

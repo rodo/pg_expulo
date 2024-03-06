@@ -48,6 +48,7 @@ func readConfig(filename string) Config {
 func getInfoFromDatabases(config Config, sequences []Sequence) Config {
 
 	var tables []Table
+	defaults := config.Defaults
 
 	for _, t := range config.Tables {
 		var newColumns []Column
@@ -69,7 +70,7 @@ func getInfoFromDatabases(config Config, sequences []Sequence) Config {
 		tables = append(tables, t)
 	}
 
-	newconf := Config{tables}
+	newconf := Config{tables, defaults}
 
 	return newconf
 }
@@ -125,4 +126,15 @@ func checkConfig(result bool, message string) bool {
 		log.Fatal(message)
 	}
 	return result
+}
+
+// Return the generator from Defaults
+func getDefaultGeneratorByName(name string) (bool, string) {
+
+	for _, t := range config.Defaults {
+		if t.Name == name {
+			return true, t.Generator
+		}
+	}
+	return false, ""
 }

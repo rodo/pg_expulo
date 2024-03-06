@@ -19,6 +19,11 @@ Usefull if you column is a serial auto fill with sequence value, pg_expulo will 
 
 For foreign keys, pg_expulo is able to auto update the value to ensure your data will be consistent at the end
 
+* keep
+
+Keep the value unmodified, this is what is done by default. In case you define columns default and want to keep a column not affected by the defaults use this generator at the table level.
+
+
 * mask
 
 The column will be filled with a 8 long char '********'
