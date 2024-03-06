@@ -59,6 +59,11 @@
                  "name": "updated_at",
                  "generator": "sql",
                  "function": "now()"
+             },
+             {
+                 "name": "country",
+                 "generator": "randomString",
+                 "preserve_null": true
              }
          ]
         },

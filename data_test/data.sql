@@ -17,7 +17,7 @@ INSERT INTO boat (name) VALUES ('Pen Duick IV');
 -- 1 with email
 --
 INSERT INTO skipper (name, email) VALUES ('Eric Tabarly', 'eric@tabarly.domain');
-INSERT INTO skipper (name) VALUES ('Florence Arthaud'), ('Catherine Chabaud');
+INSERT INTO skipper (name,country) VALUES ('Florence Arthaud','France'), ('Catherine Chabaud','France');
 INSERT INTO skipper (name) VALUES ('Loïck Peyron');
 
 INSERT INTO skipper (name, updated_at) VALUES ('Guirec Soudée', now()), ('Loïck Peyron', now()),

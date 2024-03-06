@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/go-faker/faker/v4"
+	log "github.com/sirupsen/logrus"
 )
 
 type genericFake struct{}
@@ -95,7 +96,12 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 		*colValues = append(*colValues, randomFloat())
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomString":
-		*colValues = append(*colValues, randomString())
+		log.Debug(col.PreserveNull)
+		if cols[i] == nil && col.PreserveNull {
+			*colValues = append(*colValues, cols[i])
+		} else {
+			*colValues = append(*colValues, randomString())
+		}
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "md5":
 		*colValues = append(*colValues, md5signature(fmt.Sprintf("%v", cols[i])))

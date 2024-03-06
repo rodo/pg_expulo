@@ -42,6 +42,7 @@ type Column struct {
 	SQLFunction  string `json:"function"`
 	SequenceName string
 	SeqLastValue int64
+	PreserveNull bool `json:"preserve_null"`
 }
 
 // Sequence with related attributes
