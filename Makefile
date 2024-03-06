@@ -1,7 +1,7 @@
 .PHONY: test clean
 
 
-bin/pg_expulo:
+bin/pg_expulo: *.go
 	go build -o $@
 
 clean:
