@@ -123,3 +123,22 @@ jobs:
       run: pg_prove -v --host localhost --dbname target --username postgres data_test/*_test.sql
       env:
         PGPASSWORD: postgres
+
+    - name: run binary with purge
+      run: ./pg_expulo --config samples/config-ci-full.json --purge
+      env:
+        PGSRCHOST: localhost
+        PGSRCPORT: 5432
+        PGSRCUSER: postgres
+        PGSRCPASSWORD: postgres
+        PGSRCDATABASE: source
+        PGDSTHOST: localhost
+        PGDSTPORT: 5432
+        PGDSTUSER: postgres
+        PGDSTPASSWORD: postgres
+        PGDSTDATABASE: target
+
+    - name: check results in target
+      run: pg_prove -v --host localhost --dbname target --username postgres data_test/tables_empty.sql
+      env:
+        PGPASSWORD: postgres
