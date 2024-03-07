@@ -19,6 +19,9 @@ var qryTables string
 //go:embed sql/fetch_tables.sql
 var qryFetchTables string
 
+//go:embed sql/fetch_tables_schema.sql
+var qryFetchTablesSchema string
+
 // Restart all the sequences
 func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 	for _, s := range *sequences {
@@ -46,13 +49,20 @@ func getExistingTables(dbConn *sql.DB) []string {
 	return tables
 }
 
-// Return an array of table name in fullname
+// Return an array of tables in a database
 func getDbTables(dbConn *sql.DB) []dbTable {
 	var tables []dbTable
+	var rows *sql.Rows
+	var err error
 
-	rows, err := dbConn.Query(qryFetchTables)
+	if len(schema) == 0 {
+		rows, err = dbConn.Query(qryFetchTables)
+	} else {
+		rows, err = dbConn.Query(qryFetchTablesSchema, schema)
+	}
+
 	if err != nil {
-		log.Fatal("Error executing query in GetExistingTables:", err)
+		log.Fatal("Error executing query in getDbTables:", err)
 	}
 
 	for rows.Next() {
