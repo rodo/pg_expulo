@@ -65,10 +65,11 @@ type TriggerConstraint struct {
 }
 
 var (
-	version    = "0.0.2"
-	tryOnly    = false
-	purgeOnly  = false
-	configFile = "config.json"
+	version      = "0.0.2"
+	tryOnly      = false
+	purgeOnly    = false
+	generateConf = false
+	configFile   = "config.json"
 )
 
 func init() {
@@ -100,7 +101,7 @@ func main() {
 	conns := readEnv("SRC")
 	connt := readEnv("DST")
 
-	// Construct connection string
+	// Construct the two connection strings
 	conxSource, dsnSrc := getDsn(conns.Host, conns.Port, conns.User, conns.Pass, conns.Db, version)
 	conxTarget, dsnDst := getDsn(connt.Host, connt.Port, connt.User, connt.Pass, connt.Db, version)
 
@@ -114,6 +115,12 @@ func main() {
 	dbDst := connectDb(conxTarget)
 	log.Info(fmt.Sprintf("Use %s as target", dsnDst))
 
+	// Generate the configuration and exit
+	if generateConf {
+
+		os.Exit(0)
+	}
+
 	// checkConfig emits a log fatal level and exit
 	checkConfig(checkConfigTables(config.Tables, getExistingTables(dbSrc), "source"))
 	checkConfig(checkConfigTables(config.Tables, getExistingTables(dbDst), "target"))
@@ -121,6 +128,7 @@ func main() {
 
 	// Extend the configuration with information at schema level in database
 	sequencesArr, sequencesMap := getSequencesInfo(dbDst)
+	// TODO refacto this function
 	config = getInfoFromDatabases(config, sequencesArr)
 
 	// Start a transaction on target database

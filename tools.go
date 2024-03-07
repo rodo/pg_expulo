@@ -81,6 +81,8 @@ func flagParse() {
 
 	flag.StringVar(&configFile, "config", "config.json", "Configuration file to use")
 
+	flag.BoolVar(&generateConf, "generate", false, "Generate a config file based on data fetch from source database")
+
 	// Local usage only
 	debug := flag.Bool("debug", false, "run in loglevel DEBUG")
 	flagVersion := flag.Bool("version", false, "display version")
