@@ -16,6 +16,9 @@ var qryFetchForeignKeys string
 //go:embed sql/tables.sql
 var qryTables string
 
+//go:embed sql/fetch_tables.sql
+var qryFetchTables string
+
 // Restart all the sequences
 func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 	for _, s := range *sequences {
@@ -25,7 +28,7 @@ func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 	}
 }
 
-// Restart a sequence with a new value
+// Return an array of table name in fullname
 func getExistingTables(dbConn *sql.DB) []string {
 	var tables []string
 
@@ -37,6 +40,25 @@ func getExistingTables(dbConn *sql.DB) []string {
 	for rows.Next() {
 		var table string
 		err = rows.Scan(&table)
+		tables = append(tables, table)
+	}
+
+	return tables
+}
+
+// Return an array of table name in fullname
+func getDbTables(dbConn *sql.DB) []dbTable {
+	var tables []dbTable
+
+	rows, err := dbConn.Query(qryFetchTables)
+	if err != nil {
+		log.Fatal("Error executing query in GetExistingTables:", err)
+	}
+
+	for rows.Next() {
+		var table dbTable
+		err = rows.Scan(&table.Schema, &table.Name)
+		table.CleanMethod = "delete"
 		tables = append(tables, table)
 	}
 

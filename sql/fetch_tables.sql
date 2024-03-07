@@ -8,3 +8,4 @@ WHERE
         c.relkind = 'r'
 AND
         n.nspname NOT in ('pg_catalog', 'pg_toast', 'information_schema')
+ORDER BY n.nspname, c.relname
