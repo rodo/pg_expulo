@@ -22,6 +22,9 @@ var qryFetchTables string
 //go:embed sql/fetch_tables_schema.sql
 var qryFetchTablesSchema string
 
+//go:embed sql/fetch_sequences_table.sql
+var qryFetchTableSerial string
+
 // Restart all the sequences
 func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 	for _, s := range *sequences {
@@ -45,6 +48,7 @@ func getExistingTables(dbConn *sql.DB) []string {
 		err = rows.Scan(&table)
 		tables = append(tables, table)
 	}
+	rows.Close()
 
 	return tables
 }
@@ -69,10 +73,36 @@ func getDbTables(dbConn *sql.DB) []dbTable {
 		var table dbTable
 		err = rows.Scan(&table.Schema, &table.Name)
 		table.CleanMethod = "delete"
+
+		table.Columns = getDbTableSerial(dbConn, table.Schema, table.Name)
+
 		tables = append(tables, table)
 	}
+	rows.Close()
 
 	return tables
+}
+
+// Return an array of tables in a database
+func getDbTableSerial(dbConn *sql.DB, schemaName string, tableName string) []dbColumn {
+
+	rows, err := dbConn.Query(qryFetchTableSerial, schemaName, tableName)
+
+	var columns []dbColumn
+
+	if err != nil {
+		log.Fatal("Error executing query in getDbTableSerial:", err)
+	}
+
+	for rows.Next() {
+		var column dbColumn
+		err = rows.Scan(&column.Name)
+		column.Generator = "serial"
+		columns = append(columns, column)
+	}
+	rows.Close()
+
+	return columns
 }
 
 // Restart a sequence with a new value

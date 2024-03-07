@@ -25,11 +25,18 @@ type defColumn struct {
 	PreserveNull bool   `json:"preserve_null"`
 }
 
+// Column defined to generate config file
+type dbColumn struct {
+	Name      string `json:"name"`
+	Generator string `json:"generator"`
+}
+
 // Table strucure used to generate a config file
 type dbTable struct {
-	Name        string `json:"name"`
-	Schema      string `json:"schema"`
-	CleanMethod string `json:"clean"`
+	Name        string     `json:"name"`
+	Schema      string     `json:"schema"`
+	CleanMethod string     `json:"clean"`
+	Columns     []dbColumn `json:"columns"`
 }
 
 // Read configuration file in json from disk
