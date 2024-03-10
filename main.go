@@ -65,7 +65,7 @@ type TriggerConstraint struct {
 }
 
 var (
-	version      = "1.0.0-alpha"
+	version      = "1.0.1-alpha"
 	tryOnly      = false
 	purgeOnly    = false
 	generateConf = false
@@ -155,7 +155,7 @@ func main() {
 
 	// Delete data on target tables
 	deferForeignKeys(dbDst, triggerConstraints)
-	purgeTarget(config, txDst)
+	purgeTarget(config, txDst, dbDst)
 
 	// if command line parameter is set to purge, do purge and exit
 	if purgeOnly {

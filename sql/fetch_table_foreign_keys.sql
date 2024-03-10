@@ -33,8 +33,10 @@ cte AS (
 
 )
 SELECT
-
- column_linked
+  tablename,
+  table_targ,
+  column_linked,
+  column_target
 
 FROM cte
 

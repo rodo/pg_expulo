@@ -34,7 +34,7 @@ func getTableByFullName(config Config, name string) (Table, bool) {
 	return Table{}, false
 }
 
-func purgeTarget(config Config, txDst *sql.Tx) {
+func purgeTarget(config Config, txDst *sql.Tx, dbDst *sql.DB) {
 
 	forcePurge := true
 	var tableList []string
@@ -55,6 +55,10 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 	// List all tables in purge order
 	for _, t := range OrderedTables {
 		log.Debug(fmt.Sprintf("Will clean table : %s.%s with %s", t.Schema, t.Name, t.CleanMethod))
+
+		_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
+		log.Debug(fmt.Sprintf("Add temp foreign keys on %s %d", t.FullName, len(fkeys)))
+		addForeignKeys(txDst, fkeys)
 	}
 
 	// Loop over all tables found in configuration file
@@ -83,23 +87,59 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 			_ = deleteData(t, forcePurge, txDst)
 		}
 	}
+
+	// List all tables in purge order
+	for _, t := range OrderedTables {
+		log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
+
+		_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
+		dropForeignKeys(txDst, fkeys)
+	}
+
+}
+
+func addForeignKeys(txDst *sql.Tx, fkeys []dbForeignKey) error {
+	var err error
+
+	for _, k := range fkeys {
+		err = addForeignKey(txDst, k)
+	}
+	return err
+}
+
+func dropForeignKeys(txDst *sql.Tx, fkeys []dbForeignKey) error {
+	var err error
+
+	for _, k := range fkeys {
+		err = dropForeignKey(txDst, k)
+	}
+	return err
 }
 
 // WIP
 // Add a new foreign key NOT VALID to be quick, with ON DELETE CASCADE to automatically
 // remove rows on linked tables
-func addForeignKey(tablefk Table) string {
+func addForeignKey(txDst *sql.Tx, fk dbForeignKey) error {
 
-	fkName := "expulo_1"
+	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_fkey", fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
 
-	qry := fmt.Sprintf("ALTER TABLE %s add CONSTRAINT %s FOREIGN KEY (architect) REFERENCES architect(id) ON DELETE CASCADE NOT VALID", tablefk.FullName, fkName)
-	return qry
+	sql := "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE NOT VALID"
+
+	dstQry := fmt.Sprintf(sql, fk.TableSource, fkName, fk.ColumnSource, fk.TableTarget, fk.ColumnTarget)
+	log.Debug("--- ", dstQry)
+	_, err := txDst.Exec(dstQry)
+	return err
 }
 
-func dropForeignKey(tablefk Table, fkName string) string {
+// Remove foreign keys
+func dropForeignKey(txDst *sql.Tx, fk dbForeignKey) error {
 
-	qry := fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT %s", tablefk.FullName, fkName)
-	return qry
+	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_fkey", fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
+	sql := "ALTER TABLE %s DROP CONSTRAINT %s"
+	dstQry := fmt.Sprintf(sql, fk.TableSource, fkName)
+	log.Debug("---", dstQry)
+	_, err := txDst.Exec(dstQry)
+	return err
 }
 
 // EOF WIP
