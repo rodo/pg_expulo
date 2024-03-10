@@ -25,6 +25,9 @@ var qryFetchTablesSchema string
 //go:embed sql/fetch_sequences_table.sql
 var qryFetchTableSerial string
 
+//go:embed sql/fetch_table_foreign_keys.sql
+var qryFetchTableForeignKeys string
+
 // Restart all the sequences
 func resetAllSequences(dbConn *sql.DB, sequences *map[string]Sequence) {
 	for _, s := range *sequences {
@@ -72,9 +75,11 @@ func getDbTables(dbConn *sql.DB) []dbTable {
 	for rows.Next() {
 		var table dbTable
 		err = rows.Scan(&table.Schema, &table.Name)
+		log.Info(fmt.Sprintf("In schema %s found table %s", table.Schema, table.Name))
 		table.CleanMethod = "delete"
 
 		table.Columns = getDbTableSerial(dbConn, table.Schema, table.Name)
+		table.Columns = append(table.Columns, getDbTableForeignKeys(dbConn, table.Schema, table.Name)...)
 
 		tables = append(tables, table)
 	}
@@ -99,6 +104,32 @@ func getDbTableSerial(dbConn *sql.DB, schemaName string, tableName string) []dbC
 		err = rows.Scan(&column.Name)
 		column.Generator = "serial"
 		columns = append(columns, column)
+	}
+	rows.Close()
+
+	return columns
+}
+
+// Fetch the foreign keys defined on a table from the database catalog
+func getDbTableForeignKeys(dbConn *sql.DB, schemaName string, tableName string) []dbColumn {
+
+	rows, err := dbConn.Query(qryFetchTableForeignKeys, schemaName, tableName)
+	if err != nil {
+		log.Fatal("Error executing query in getDbTableForeignKeys:", err)
+	}
+	var columns []dbColumn
+
+	for rows.Next() {
+		var column dbColumn
+		err = rows.Scan(&column.Name)
+		if err != nil {
+			log.Fatal("Error on row", err)
+		}
+		column.Generator = "foreign_key"
+		columns = append(columns, column)
+	}
+	if err = rows.Err(); err != nil {
+		log.Fatal("Error reading rows :", err)
 	}
 	rows.Close()
 
@@ -172,8 +203,6 @@ func queryTableSource(dbSrc *sql.DB, query string) (*sql.Rows, []string) {
 func getTriggerConstraints(dbConn *sql.DB, tbFullnames []string, foreignKeys *map[string]string) []TriggerConstraint {
 
 	filter := "{" + strings.Join(tbFullnames, ",") + "}"
-
-	log.Debug("filter : ", filter)
 
 	rows, err := dbConn.Query(qryFetchForeignKeys, filter)
 	if err != nil {
