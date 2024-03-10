@@ -70,6 +70,7 @@ var (
 	purgeOnly    = false
 	generateConf = false
 	configFile   = "config.json"
+	schema       = ""
 )
 
 func init() {
@@ -92,11 +93,6 @@ func main() {
 	// Parse command line arguments
 	flagParse()
 
-	// Read the configuration
-	config = readConfig(configFile)
-	log.Debug("Read config done")
-	log.Debug("Number of tables found in conf: ", len(config.Tables))
-
 	// Read connection information from env variables
 	conns := readEnv("SRC")
 	connt := readEnv("DST")
@@ -117,9 +113,18 @@ func main() {
 
 	// Generate the configuration and exit
 	if generateConf {
-
+		if len(configFile) == 0 {
+			configFile = "config.auto.json"
+		}
+		generateConfig(configFile, getDbTables(dbDst))
+		log.Info(fmt.Sprintf("Configuration written in file %s", configFile))
 		os.Exit(0)
 	}
+
+	// Read the configuration
+	config = readConfig(configFile)
+	log.Debug("Read config done")
+	log.Debug("Number of tables found in conf: ", len(config.Tables))
 
 	// checkConfig emits a log fatal level and exit
 	checkConfig(checkConfigTables(config.Tables, getExistingTables(dbSrc), "source"))

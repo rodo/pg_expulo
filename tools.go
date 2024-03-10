@@ -80,6 +80,7 @@ func flagParse() {
 	flag.BoolVar(&purgeOnly, "purge", false, "Only purge destination tables and exit, no data will be inserted")
 
 	flag.StringVar(&configFile, "config", "config.json", "Configuration file to use")
+	flag.StringVar(&schema, "schema", "", "Schema(s) to look in for tables")
 
 	flag.BoolVar(&generateConf, "generate", false, "Generate a config file based on data fetch from source database")
 

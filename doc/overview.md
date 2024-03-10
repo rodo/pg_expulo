@@ -2,8 +2,24 @@
 
 ## Usage
 
-Design to be simple at use with powerful features, running `pg_expulo` is enough once it configured.
+Design to be simple at use with powerful features, running `pg_expulo` is enough once it's configured.
 Some option can change the default behaviour
+
+### the debug option
+
+Set log level to DEBUG
+
+```code
+pg_expulo -debug
+```
+
+### the generate option
+
+Generate a configuration file based on information fetched from target database. The configuration fill will contains all the tables present and some defaults generator.
+
+```code
+pg_expulo -generate -config config.auto.json
+```
 
 ### the try option
 
@@ -25,4 +41,12 @@ Obviously you can combine both options
 
 ```code
 pg_expulo -try -purge
+```
+
+### the version option
+
+Print version number on STDOUT and exit
+
+```code
+pg_expulo -version
 ```

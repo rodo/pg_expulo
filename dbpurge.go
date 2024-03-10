@@ -85,6 +85,25 @@ func purgeTarget(config Config, txDst *sql.Tx) {
 	}
 }
 
+// WIP
+// Add a new foreign key NOT VALID to be quick, with ON DELETE CASCADE to automatically
+// remove rows on linked tables
+func addForeignKey(tablefk Table) string {
+
+	fkName := "expulo_1"
+
+	qry := fmt.Sprintf("ALTER TABLE %s add CONSTRAINT %s FOREIGN KEY (architect) REFERENCES architect(id) ON DELETE CASCADE NOT VALID", tablefk.FullName, fkName)
+	return qry
+}
+
+func dropForeignKey(tablefk Table, fkName string) string {
+
+	qry := fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT %s", tablefk.FullName, fkName)
+	return qry
+}
+
+// EOF WIP
+
 func deleteData(t Table, forcePurge bool, txDst *sql.Tx) error {
 	log.Debug(fmt.Sprintf("DELETE data from %s according to configuration", t.Name))
 

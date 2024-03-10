@@ -68,3 +68,10 @@ CREATE TABLE cheater (name text default 'fool');
    Primary Key non integer
 */
 CREATE TABLE town (name text PRIMARY KEY, area text default 'North');
+
+--
+--
+--
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM expulo;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM expulo;
+GRANT SELECT on ALL TABLES IN SCHEMA public TO expulo ;

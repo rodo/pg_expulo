@@ -28,7 +28,8 @@ WHERE schemaname IN ('public')
 columns AS (
 
 SELECT
-        table_schema || '.' ||  table_name as tablename,
+        table_schema,
+        table_name,
         column_name,
         ordinal_position,
         column_default
@@ -38,11 +39,9 @@ WHERE table_schema NOT IN ('information_schema','pg_catalog')
 )
 
 SELECT
-        tablename,
-        column_name,
-        sequencename,
-        NEXTVAL(sequencename),
-        ordinal_position as column_position
+        column_name
 
 FROM sequences as s
 INNER JOIN columns c ON c.column_default = s.default_value
+
+WHERE table_schema = $1 AND table_name = $2
