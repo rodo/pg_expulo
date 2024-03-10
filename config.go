@@ -33,6 +33,7 @@ type dbColumn struct {
 
 // Column defined to generate config file
 type dbForeignKey struct {
+	SchemaSource string
 	TableSource  string
 	TableTarget  string
 	ColumnSource string
