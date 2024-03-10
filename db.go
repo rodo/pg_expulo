@@ -79,7 +79,8 @@ func getDbTables(dbConn *sql.DB) []dbTable {
 		table.CleanMethod = "delete"
 
 		table.Columns = getDbTableSerial(dbConn, table.Schema, table.Name)
-		table.Columns = append(table.Columns, getDbTableForeignKeys(dbConn, table.Schema, table.Name)...)
+		cols, _ := getDbTableForeignKeys(dbConn, table.Schema, table.Name)
+		table.Columns = append(table.Columns, cols...)
 
 		tables = append(tables, table)
 	}
@@ -111,29 +112,35 @@ func getDbTableSerial(dbConn *sql.DB, schemaName string, tableName string) []dbC
 }
 
 // Fetch the foreign keys defined on a table from the database catalog
-func getDbTableForeignKeys(dbConn *sql.DB, schemaName string, tableName string) []dbColumn {
+func getDbTableForeignKeys(dbConn *sql.DB, schemaName string, tableName string) ([]dbColumn, []dbForeignKey) {
 
 	rows, err := dbConn.Query(qryFetchTableForeignKeys, schemaName, tableName)
 	if err != nil {
 		log.Fatal("Error executing query in getDbTableForeignKeys:", err)
 	}
 	var columns []dbColumn
+	var fkeys []dbForeignKey
 
 	for rows.Next() {
 		var column dbColumn
-		err = rows.Scan(&column.Name)
+		var fkey dbForeignKey
+		err = rows.Scan(&fkey.TableSource, &fkey.TableTarget, &fkey.ColumnSource, &fkey.ColumnTarget)
 		if err != nil {
 			log.Fatal("Error on row", err)
 		}
+
+		column.Name = fkey.ColumnSource
+
 		column.Generator = "foreign_key"
 		columns = append(columns, column)
+		fkeys = append(fkeys, fkey)
 	}
 	if err = rows.Err(); err != nil {
 		log.Fatal("Error reading rows :", err)
 	}
 	rows.Close()
 
-	return columns
+	return columns, fkeys
 }
 
 // Restart a sequence with a new value

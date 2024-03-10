@@ -86,9 +86,8 @@ jobs:
     - name: fill db target
       run: psql "postgres://postgres:postgres@localhost:5432/target" -f data_test/data-target.sql
 
-
-    - name: run binary
-      run: ./pg_expulo --config samples/config-ci-full.json
+    - name: generate a config file
+      run: ./pg_expulo --config config.generate.json --generate --debug
       env:
         PGSRCHOST: localhost
         PGSRCPORT: 5432
@@ -101,13 +100,28 @@ jobs:
         PGDSTPASSWORD: postgres
         PGDSTDATABASE: target
 
+    - name: run binary
+      run: ./pg_expulo --config samples/config-ci-full.json --debug
+      env:
+        PGSRCHOST: localhost
+        PGSRCPORT: 5432
+        PGSRCUSER: postgres
+        PGSRCPASSWORD: postgres
+        PGSRCDATABASE: source
+        PGDSTHOST: localhost
+        PGDSTPORT: 5432
+        PGDSTUSER: postgres
+        PGDSTPASSWORD: postgres
+        PGDSTDATABASE: target
+
+
     - name: check results in target
       run: pg_prove -v --host localhost --dbname target --username postgres data_test/*_test.sql
       env:
         PGPASSWORD: postgres
 
     - name: run binary with purge
-      run: ./pg_expulo --config samples/config-ci-full.json --purge
+      run: ./pg_expulo --config samples/config-ci-full.json --purge --debug
       env:
         PGSRCHOST: localhost
         PGSRCPORT: 5432
@@ -137,7 +151,7 @@ jobs:
         PGPASSWORD: postgres
 
     - name: run binary with try option
-      run: ./pg_expulo --config samples/config-ci-full.json --try
+      run: ./pg_expulo --config samples/config-ci-full.json --try --debug
       env:
         PGSRCHOST: localhost
         PGSRCPORT: 5432

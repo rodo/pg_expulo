@@ -65,7 +65,7 @@ type TriggerConstraint struct {
 }
 
 var (
-	version      = "1.0.0-alpha"
+	version      = "1.0.1-alpha"
 	tryOnly      = false
 	purgeOnly    = false
 	generateConf = false
@@ -155,14 +155,36 @@ func main() {
 
 	// Delete data on target tables
 	deferForeignKeys(dbDst, triggerConstraints)
-	purgeTarget(config, txDst)
+	purgeTarget(config, txDst, dbDst)
 
 	// if command line parameter is set to purge, do purge and exit
 	if purgeOnly {
 		log.Debug("Exit on option, purge")
 		closeTx(txDst, tryOnly)
 		reactivateForeignKeys(dbDst, triggerConstraints)
+		// Remove the temp constrainsts
+		for _, t := range config.Tables {
+			log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
+
+			_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
+			dropForeignKeys(dbDst, fkeys)
+		}
 		os.Exit(0)
+	}
+
+	if err = txDst.Commit(); err != nil {
+		log.Fatal("Error committing transaction : ", err)
+	} else {
+		log.Info("Commit on target")
+	}
+
+	txDst, err = dbDst.Begin()
+	// Remove the temp constrainsts
+	for _, t := range config.Tables {
+		log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
+
+		_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
+		dropForeignKeys(dbDst, fkeys)
 	}
 
 	// Log all tables for debug purpose

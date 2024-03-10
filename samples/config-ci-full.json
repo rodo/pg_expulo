@@ -9,8 +9,7 @@
          "columns": [
              { "name": "id", "generator": "serial" },
              { "name": "name", "generator": "null" },
-             {
-                 "name": "value",
+             { "name": "value",
                  "generator": "randomInt"
              },
              {

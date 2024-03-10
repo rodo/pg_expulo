@@ -31,6 +31,14 @@ type dbColumn struct {
 	Generator string `json:"generator"`
 }
 
+// Column defined to generate config file
+type dbForeignKey struct {
+	TableSource  string
+	TableTarget  string
+	ColumnSource string
+	ColumnTarget string
+}
+
 // Table strucure used to generate a config file
 type dbTable struct {
 	Name        string     `json:"name"`
