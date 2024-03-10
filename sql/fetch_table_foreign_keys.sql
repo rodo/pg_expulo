@@ -28,7 +28,7 @@ cte AS (
     INNER JOIN tables AS ts ON (ts.oid = c.conrelid AND ts.attnum = c.conkey[1])
     INNER JOIN tables AS tt ON (tt.oid = c.confrelid AND tt.attnum = c.confkey[1])
 
-    WHERE c.contype = 'f'
+    WHERE c.contype = 'f' AND conname NOT LIKE 'expulo_%'
     -- TODO see how to manage foreign keys with 2 columns
 
 )
