@@ -1,14 +1,5 @@
 # Quickstart
 
-## Usage
-
-
-
-
-Design to be simple at use with powerful features, running `pg_expulo` is enough once it's configured.
-Some option can change the default behaviour
-
-
 Create a user on source database with apropriate privileges. We
 **strongly** encourage you to protect your source database to avoid
 any disaster.
@@ -24,7 +15,8 @@ GRANT SELECT on ALL TABLES IN SCHEMA public TO expulo ;
 
 On **target** database you must use the **owner** of tables to be able to do all operations needed by pg_expulo.
 
-So define the environment variable to use the new dedicted user on **source** and the owner of tables ans sequences on **target**
+Define the environment variables to use the new user on
+**source** and the owner of tables and sequences on **target**
 
 ```code
 export PGSRCHOST=localhost
@@ -40,7 +32,7 @@ export PGDSTPASSWORD=***
 export PGDSTDATABASE=destination
 ```
 
-Then generate your configuration file.
+Generate your configuration file.
 
 ```code
 pg_expulo -generate -config config.json
