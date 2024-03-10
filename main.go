@@ -65,7 +65,7 @@ type TriggerConstraint struct {
 }
 
 var (
-	version      = "0.0.2"
+	version      = "1.0.0-alpha"
 	tryOnly      = false
 	purgeOnly    = false
 	generateConf = false

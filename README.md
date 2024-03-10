@@ -16,7 +16,7 @@ target.
 pg_expulo is able to deal with foreign keys and serial values, it will
 automatically set the right value.
 
-
+## [Quickstart](quickstart.md)
 
 ## Usage
 
@@ -33,7 +33,7 @@ The two connections strings are build from env variables, you need at least thes
     export PGDSTPASSWORD=******
     export PGDSTDATABASE=destination
 
-You can run pgexpulo without any parameter
+You can run pg_expulo without any parameter
 
 ```code
 pg_expluo
