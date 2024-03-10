@@ -16,7 +16,7 @@ target.
 pg_expulo is able to deal with foreign keys and serial values, it will
 automatically set the right value.
 
-## [Quickstart](quickstart.md)
+## [Quickstart](doc/quickstart.md)
 
 ## Usage
 
