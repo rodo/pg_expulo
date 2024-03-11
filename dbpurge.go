@@ -52,13 +52,16 @@ func purgeTarget(config Config, txDst *sql.Tx, dbDst *sql.DB) {
 		}
 	}
 
-	// List all tables in purge order
+	// Loop over all tables defined in configuration
 	for _, t := range OrderedTables {
 		log.Debug(fmt.Sprintf("Will clean table : %s.%s with %s", t.Schema, t.Name, t.CleanMethod))
 
 		_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
 		log.Debug(fmt.Sprintf("Add temp foreign keys on %s %d", t.FullName, len(fkeys)))
-		addForeignKeys(txDst, fkeys)
+		err := addForeignKeys(txDst, fkeys)
+		if err != nil {
+			log.Fatal("Error add foreign keys:", err)
+		}
 	}
 
 	// Loop over all tables found in configuration file
