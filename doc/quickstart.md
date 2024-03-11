@@ -8,6 +8,7 @@ On **source**
 
 ```code sql
 CREATE USER expulo;
+GRANT USAGE ON SCHEMA public TO expulo;
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM expulo;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM expulo;
 GRANT SELECT on ALL TABLES IN SCHEMA public TO expulo ;

@@ -154,14 +154,14 @@ func main() {
 	triggerConstraints := getTriggerConstraints(dbDst, tableList, &foreignKeys)
 
 	// Delete data on target tables
-	deferForeignKeys(dbDst, triggerConstraints)
+	deferForeignKeys(txDst, triggerConstraints)
 	purgeTarget(config, txDst, dbDst)
 
 	// if command line parameter is set to purge, do purge and exit
 	if purgeOnly {
 		log.Debug("Exit on option, purge")
 		closeTx(txDst, tryOnly)
-		reactivateForeignKeys(dbDst, triggerConstraints)
+		reactivateForeignKeys(txDst, triggerConstraints)
 		// Remove the temp constrainsts
 		for _, t := range config.Tables {
 			log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
@@ -210,7 +210,7 @@ func main() {
 	if tryOnly {
 		// Rollback the transaction on target as requested
 		if err := txDst.Rollback(); err != nil {
-			log.Fatal("Error committing transaction: ", err)
+			log.Fatal("Error in rollback transaction: ", err)
 		}
 		log.Info("Rollback on target")
 	} else {
@@ -221,6 +221,9 @@ func main() {
 		if err := txDst.Commit(); err != nil {
 			log.Fatal("Error committing transaction: ", err)
 		} else {
+			txDst, err = dbDst.Begin()
+			reactivateForeignKeys(txDst, triggerConstraints)
+			txDst.Commit()
 			log.Info("Commit on target")
 		}
 	}

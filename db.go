@@ -243,7 +243,7 @@ func getTriggerConstraints(dbConn *sql.DB, tbFullnames []string, foreignKeys *ma
 }
 
 // Disable all triggers on database
-func deferForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
+func deferForeignKeys(dbConn *sql.Tx, triggers []TriggerConstraint) error {
 
 	var err error
 
@@ -257,7 +257,7 @@ func deferForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
 }
 
 // Reactivate all foreign keys
-func reactivateForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
+func reactivateForeignKeys(dbConn *sql.Tx, triggers []TriggerConstraint) error {
 
 	var err error
 
@@ -271,7 +271,7 @@ func reactivateForeignKeys(dbConn *sql.DB, triggers []TriggerConstraint) error {
 }
 
 // Disable a trigger on database
-func alterForeignKey(dbConn *sql.DB, queryDef string, tablename string, fkName string) error {
+func alterForeignKey(dbConn *sql.Tx, queryDef string, tablename string, fkName string) error {
 	var err error
 
 	qry := fmt.Sprintf(queryDef, tablename, fkName)
