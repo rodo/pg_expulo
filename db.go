@@ -124,7 +124,7 @@ func getDbTableForeignKeys(dbConn *sql.DB, schemaName string, tableName string) 
 	for rows.Next() {
 		var column dbColumn
 		var fkey dbForeignKey
-		err = rows.Scan(&fkey.SchemaSource, &fkey.TableSource, &fkey.TableTarget, &fkey.ColumnSource, &fkey.ColumnTarget)
+		err = rows.Scan(&fkey.SchemaSource, &fkey.SchemaTarget, &fkey.TableSource, &fkey.TableTarget, &fkey.ColumnSource, &fkey.ColumnTarget)
 		if err != nil {
 			log.Fatal("Error on row", err)
 		}

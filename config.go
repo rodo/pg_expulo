@@ -35,6 +35,7 @@ type dbColumn struct {
 type dbForeignKey struct {
 	SchemaSource string
 	TableSource  string
+	SchemaTarget string
 	TableTarget  string
 	ColumnSource string
 	ColumnTarget string

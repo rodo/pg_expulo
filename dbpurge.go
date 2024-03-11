@@ -117,7 +117,7 @@ func addForeignKey(txDst *sql.Tx, fk dbForeignKey) error {
 
 	sql := "ALTER TABLE %s.%s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s.%s(%s) ON DELETE CASCADE NOT VALID"
 
-	dstQry := fmt.Sprintf(sql, fk.SchemaSource, fk.TableSource, fkName, fk.ColumnSource, fk.SchemaSource, fk.TableTarget, fk.ColumnTarget)
+	dstQry := fmt.Sprintf(sql, fk.SchemaSource, fk.TableSource, fkName, fk.ColumnSource, fk.SchemaTarget, fk.TableTarget, fk.ColumnTarget)
 	_, err := txDst.Exec(dstQry)
 	if err != nil {
 		log.Fatal("Error in addForeignKey: ", err)
