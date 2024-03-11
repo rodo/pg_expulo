@@ -33,6 +33,7 @@ cte AS (
 
 )
 SELECT
+  schemaname,
   tablename,
   table_targ,
   column_linked,

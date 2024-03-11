@@ -113,11 +113,11 @@ func dropForeignKeys(txDst *sql.DB, fkeys []dbForeignKey) error {
 // remove rows on linked tables
 func addForeignKey(txDst *sql.Tx, fk dbForeignKey) error {
 
-	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_fkey", fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
+	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_%s_fkey", fk.SchemaSource, fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
 
-	sql := "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE NOT VALID"
+	sql := "ALTER TABLE %s.%s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s.%s(%s) ON DELETE CASCADE NOT VALID"
 
-	dstQry := fmt.Sprintf(sql, fk.TableSource, fkName, fk.ColumnSource, fk.TableTarget, fk.ColumnTarget)
+	dstQry := fmt.Sprintf(sql, fk.SchemaSource, fk.TableSource, fkName, fk.ColumnSource, fk.SchemaSource, fk.TableTarget, fk.ColumnTarget)
 	_, err := txDst.Exec(dstQry)
 	if err != nil {
 		log.Fatal("Error in addForeignKey: ", err)
@@ -128,9 +128,10 @@ func addForeignKey(txDst *sql.Tx, fk dbForeignKey) error {
 // Remove foreign keys
 func dropForeignKey(txDst *sql.DB, fk dbForeignKey) error {
 
-	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_fkey", fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
-	sql := "ALTER TABLE %s DROP CONSTRAINT %s"
-	dstQry := fmt.Sprintf(sql, fk.TableSource, fkName)
+	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_%s_fkey", fk.SchemaSource, fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
+
+	sql := "ALTER TABLE %s.%s DROP CONSTRAINT %s"
+	dstQry := fmt.Sprintf(sql, fk.SchemaSource, fk.TableSource, fkName)
 	log.Debug("---- ", dstQry)
 	_, err := txDst.Exec(dstQry)
 	if err != nil {
