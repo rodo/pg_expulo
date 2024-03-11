@@ -160,8 +160,8 @@ func main() {
 	// if command line parameter is set to purge, do purge and exit
 	if purgeOnly {
 		log.Debug("Exit on option, purge")
-		closeTx(txDst, tryOnly)
 		reactivateForeignKeys(txDst, triggerConstraints)
+		closeTx(txDst, tryOnly)
 		// Remove the temp constrainsts
 		for _, t := range config.Tables {
 			log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
