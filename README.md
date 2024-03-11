@@ -3,7 +3,7 @@
 
 pg_expulo connect to two PostgreSQL instances, typically one in
 production and on in staging environement. The extraction is
-configured in a json file, data are read on source, data ar anonymize
+configured in a json file, data are read on source, data are anonymize
 with your own rules, and load on target.
 
 pg_expulo aims to be explicit, easy to use, compliant and
