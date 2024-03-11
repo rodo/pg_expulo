@@ -49,6 +49,9 @@ func getExistingTables(dbConn *sql.DB) []string {
 	for rows.Next() {
 		var table string
 		err = rows.Scan(&table)
+		if err != nil {
+			log.Fatal("Error reading rows in GetExistingTables:", err)
+		}
 		tables = append(tables, table)
 	}
 	rows.Close()
@@ -75,6 +78,9 @@ func getDbTables(dbConn *sql.DB) []dbTable {
 	for rows.Next() {
 		var table dbTable
 		err = rows.Scan(&table.Schema, &table.Name)
+		if err != nil {
+			log.Fatal("Error reading rows in getDbTables:", err)
+		}
 		log.Info(fmt.Sprintf("In schema %s found table %s", table.Schema, table.Name))
 		table.CleanMethod = "delete"
 
@@ -103,6 +109,9 @@ func getDbTableSerial(dbConn *sql.DB, schemaName string, tableName string) []dbC
 	for rows.Next() {
 		var column dbColumn
 		err = rows.Scan(&column.Name)
+		if err != nil {
+			log.Fatal("Error reading rows in getDbTableSerial:", err)
+		}
 		column.Generator = "serial"
 		columns = append(columns, column)
 	}
@@ -124,7 +133,7 @@ func getDbTableForeignKeys(dbConn *sql.DB, schemaName string, tableName string) 
 	for rows.Next() {
 		var column dbColumn
 		var fkey dbForeignKey
-		err = rows.Scan(&fkey.SchemaSource, &fkey.TableSource, &fkey.TableTarget, &fkey.ColumnSource, &fkey.ColumnTarget)
+		err = rows.Scan(&fkey.SchemaSource, &fkey.SchemaTarget, &fkey.TableSource, &fkey.TableTarget, &fkey.ColumnSource, &fkey.ColumnTarget)
 		if err != nil {
 			log.Fatal("Error on row", err)
 		}
@@ -243,35 +252,28 @@ func getTriggerConstraints(dbConn *sql.DB, tbFullnames []string, foreignKeys *ma
 }
 
 // Disable all triggers on database
-func deferForeignKeys(dbConn *sql.Tx, triggers []TriggerConstraint) error {
-
-	var err error
+func deferForeignKeys(dbConn *sql.Tx, triggers []TriggerConstraint) {
 
 	qry := "ALTER TABLE %s ALTER CONSTRAINT %s INITIALLY DEFERRED"
 
 	for _, t := range triggers {
-		err = alterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
+		alterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
 	}
-
-	return err
 }
 
 // Reactivate all foreign keys
-func reactivateForeignKeys(dbConn *sql.Tx, triggers []TriggerConstraint) error {
-
-	var err error
+func reactivateForeignKeys(dbConn *sql.Tx, triggers []TriggerConstraint) {
 
 	qry := "ALTER TABLE %s ALTER CONSTRAINT %s NOT DEFERRABLE"
 
 	for _, t := range triggers {
-		err = alterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
+		alterForeignKey(dbConn, qry, t.TableFullName, t.ConstraintName)
 	}
 
-	return err
 }
 
 // Disable a trigger on database
-func alterForeignKey(dbConn *sql.Tx, queryDef string, tablename string, fkName string) error {
+func alterForeignKey(dbConn *sql.Tx, queryDef string, tablename string, fkName string) {
 	var err error
 
 	qry := fmt.Sprintf(queryDef, tablename, fkName)
@@ -282,8 +284,6 @@ func alterForeignKey(dbConn *sql.Tx, queryDef string, tablename string, fkName s
 	if err != nil {
 		log.Fatal("Error executing query in DeferForeignKey:", err)
 	}
-
-	return err
 }
 
 // Commit or Roll back an open transaction

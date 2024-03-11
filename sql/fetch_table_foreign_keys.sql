@@ -18,6 +18,7 @@ WITH tables AS ( -- qry fetch_foreign_keys
 cte AS (
     SELECT DISTINCT
         ts.schemaname,
+        tt.schemaname as schema_target,
         ts.tablename AS tablename,
         tt.tablename AS table_targ,
         conname,
@@ -34,6 +35,7 @@ cte AS (
 )
 SELECT
   schemaname,
+  schema_target,
   tablename,
   table_targ,
   column_linked,

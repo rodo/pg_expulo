@@ -65,7 +65,7 @@ type TriggerConstraint struct {
 }
 
 var (
-	version      = "1.0.2-alpha"
+	version      = "1.0.3-alpha"
 	tryOnly      = false
 	purgeOnly    = false
 	generateConf = false
@@ -146,6 +146,7 @@ func main() {
 	var tableList []string
 	for _, t := range config.Tables {
 		tableList = append(tableList, fullTableName(t.Schema, t.Name))
+		log.Debug(fmt.Sprintf("Will insert in : %s", t.FullName))
 	}
 
 	foreignKeys := make(map[string]string)
@@ -159,17 +160,7 @@ func main() {
 
 	// if command line parameter is set to purge, do purge and exit
 	if purgeOnly {
-		log.Debug("Exit on option, purge")
-		reactivateForeignKeys(txDst, triggerConstraints)
-		closeTx(txDst, tryOnly)
-		// Remove the temp constrainsts
-		for _, t := range config.Tables {
-			log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
-
-			_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
-			dropForeignKeys(dbDst, fkeys)
-		}
-		os.Exit(0)
+		stopAfterPurge(txDst, dbDst, triggerConstraints, config)
 	}
 
 	if err = txDst.Commit(); err != nil {
@@ -179,18 +170,11 @@ func main() {
 	}
 
 	txDst, err = dbDst.Begin()
-	// Remove the temp constrainsts
-	for _, t := range config.Tables {
-		log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
-
-		_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
-		dropForeignKeys(dbDst, fkeys)
+	if err != nil {
+		log.Fatal("Error opening transaction:", err)
 	}
-
-	// Log all tables for debug purpose
-	for _, t := range config.Tables {
-		log.Debug(fmt.Sprintf("Will insert in : %s", t.FullName))
-	}
+	// Remove the temp constraints
+	removeTempFk(dbDst, config)
 
 	// Loop over all configured tables
 	for _, t := range config.Tables {
@@ -208,26 +192,67 @@ func main() {
 	}
 
 	if tryOnly {
-		// Rollback the transaction on target as requested
-		if err := txDst.Rollback(); err != nil {
-			log.Fatal("Error in rollback transaction: ", err)
-		}
-		log.Info("Rollback on target")
+		rollback(txDst)
 	} else {
 		// Restarting sequences
 		resetAllSequences(dbDst, &sequencesMap)
 
-		// Commit the transaction on target if all queries succeed
+		// Commit the transaction on target if all queries succeeded
 		if err := txDst.Commit(); err != nil {
 			log.Fatal("Error committing transaction: ", err)
 		} else {
 			txDst, err = dbDst.Begin()
+			if err != nil {
+				log.Fatal("Error opening transaction:", err)
+			}
 			reactivateForeignKeys(txDst, triggerConstraints)
-			txDst.Commit()
+
+			err = txDst.Commit()
+			if err != nil {
+				log.Fatal("Error on commit:", err)
+			}
 			log.Info("Commit on target")
 		}
 	}
 	log.Info("Thank you for using pg_expulo")
+}
+
+func removeTempFk(dbDst *sql.DB, config Config) {
+	for _, t := range config.Tables {
+		log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
+
+		_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
+		err := dropForeignKeys(dbDst, fkeys)
+		if err != nil {
+			log.Fatal("Error dropping foreign keys:", err)
+		}
+	}
+}
+
+func stopAfterPurge(txDst *sql.Tx, dbDst *sql.DB, triggerConstraints []TriggerConstraint, config Config) {
+	var err error
+	log.Debug("Exit on option, purge")
+	reactivateForeignKeys(txDst, triggerConstraints)
+	closeTx(txDst, tryOnly)
+	// Remove the temp constrainsts
+	for _, t := range config.Tables {
+		log.Debug(fmt.Sprintf("Drop temp foreign keys on %s", t.FullName))
+
+		_, fkeys := getDbTableForeignKeys(dbDst, t.Schema, t.Name)
+		err = dropForeignKeys(dbDst, fkeys)
+		if err != nil {
+			log.Fatal("Error dropping foreign keys:", err)
+		}
+	}
+	os.Exit(0)
+}
+
+func rollback(txDst *sql.Tx) {
+	// Rollback the transaction on target as requested
+	if err := txDst.Rollback(); err != nil {
+		log.Fatal("Error in rollback transaction: ", err)
+	}
+	log.Info("Rollback on target")
 }
 
 func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery string, sequencesMap *map[string]Sequence, foreignKeys map[string]string) (int, string) {
@@ -266,14 +291,17 @@ func doTable(dbSrc *sql.DB, dbDst *sql.DB, txDst *sql.Tx, t Table, srcQuery stri
 			columnPointers[i] = &cols[i]
 
 		}
-		rows.Scan(columnPointers...)
+		err := rows.Scan(columnPointers...)
+		if err != nil {
+			log.Fatal("Error reading rows:", err)
+		}
 
 		stmtParam = []string{}
 		var colValues []interface{}
 
 		// Manage what we do it data here
 		for i := range cols {
-			cfvalue := "notfound"
+			var cfvalue string
 			col, found := getCols(t, columns[i])
 			if found {
 				cfvalue = col.Generator
