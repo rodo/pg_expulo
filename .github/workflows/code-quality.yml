@@ -1,4 +1,4 @@
-name: golangci-lint
+name: code quality
 on:
   push:
 
@@ -9,6 +9,17 @@ permissions:
   # pull-requests: read
 
 jobs:
+  scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   golangci:
     name: lint
     runs-on: ubuntu-latest
@@ -50,3 +61,30 @@ jobs:
 
           # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
           # install-mode: "goinstall"
+
+  semgrep-full:
+      runs-on: ubuntu-latest
+      container:
+        image: returntocorp/semgrep
+
+      steps:
+        - name: clone application source code
+          uses: actions/checkout@v4
+
+        - name: full scan
+          run: |
+            semgrep \
+              --sarif --output report.sarif \
+              --metrics=off \
+              --config="p/default"
+
+        - name: save report as pipeline artifact
+          uses: actions/upload-artifact@v3
+          with:
+            name: report.sarif
+            path: report.sarif
+
+        - name: Download report
+          uses: actions/download-artifact@v2
+          with:
+            name: report.sarif
