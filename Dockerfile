@@ -13,6 +13,7 @@ RUN go mod download
 # https://docs.docker.com/reference/dockerfile/#copy
 COPY *.go ./
 
+# Copy the sql files
 COPY sql ./sql
 
 # Build
