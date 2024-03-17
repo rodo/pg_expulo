@@ -15,7 +15,7 @@ func TestGetTableByNameExists(t *testing.T) {
 
 	tables = append(tables, expectedValue)
 
-	config := Config{tables, []Column{}}
+	config := Config{tables, []defColumn{}}
 
 	result, found := getTableByName(config, "foobar")
 
@@ -32,7 +32,7 @@ func TestGetTableByNameNotExists(t *testing.T) {
 
 	tables = append(tables, expectedValue)
 
-	config := Config{tables, []Column{}}
+	config := Config{tables, []defColumn{}}
 
 	result, found := getTableByName(config, "not_exists")
 

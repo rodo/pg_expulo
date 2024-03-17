@@ -4,15 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-faker/faker/v4"
 	log "github.com/sirupsen/logrus"
 )
-
-type genericFake struct{}
-
-func (genericFake) FakeEmail() string     { return faker.Email() }
-func (genericFake) FakeName() string      { return faker.Name() }
-func (genericFake) FakeFirstName() string { return faker.FirstName() }
 
 //gocyclo:ignore
 func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{}, colparam *[]string, nbColumnModified *int, cols []interface{}, colNames *[]string, i int, columns []string, sequences *map[string]Sequence, foreignKeys map[string]string, initValues map[string]int64) {
