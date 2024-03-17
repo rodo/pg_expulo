@@ -20,4 +20,4 @@ COPY sql ./sql
 RUN CGO_ENABLED=0 GOOS=linux go build -o /pg_expulo
 
 # Run
-CMD ["/pg_expulo"]
+ENTRYPOINT ["/pg_expulo"]
