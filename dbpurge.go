@@ -96,8 +96,8 @@ func purgeTarget(config Config, txDst *sql.Tx, dbDst *sql.DB) {
 func addForeignKeys(txDst *sql.Tx, fkeys []dbForeignKey) error {
 	var err error
 
-	for _, k := range fkeys {
-		err = addForeignKey(txDst, k)
+	for _, fk := range fkeys {
+		err = genericSQL(txDst, queryAddForeignKey(fk), "Error in addForeignKey: ")
 	}
 	return err
 }
@@ -105,45 +105,54 @@ func addForeignKeys(txDst *sql.Tx, fkeys []dbForeignKey) error {
 func dropForeignKeys(txDst *sql.DB, fkeys []dbForeignKey) error {
 	var err error
 
-	for _, k := range fkeys {
-		err = dropForeignKey(txDst, k)
+	for _, fk := range fkeys {
+		err = genericDBSQL(txDst, queryAddForeignKey(fk), "Error in dropForeignKey: ")
+	}
+	return err
+}
+
+func genericSQL(txDst *sql.Tx, query string, message string) error {
+
+	_, err := txDst.Exec(query)
+	if err != nil {
+		log.Fatal(message, err)
+	}
+	return err
+}
+
+func genericDBSQL(txDst *sql.DB, query string, message string) error {
+
+	_, err := txDst.Exec(query)
+	if err != nil {
+		log.Fatal(message, err)
 	}
 	return err
 }
 
 // WIP
-// Add a new foreign key NOT VALID to be quick, with ON DELETE CASCADE to automatically
-// remove rows on linked tables
-func addForeignKey(txDst *sql.Tx, fk dbForeignKey) error {
+
+func queryAddForeignKey(fk dbForeignKey) string {
 
 	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_%s_fkey", fk.SchemaSource, fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
 
 	sql := "ALTER TABLE %s.%s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s.%s(%s) ON DELETE CASCADE NOT VALID"
 
-	dstQry := fmt.Sprintf(sql, fk.SchemaSource, fk.TableSource, fkName, fk.ColumnSource, fk.SchemaTarget, fk.TableTarget, fk.ColumnTarget)
-	_, err := txDst.Exec(dstQry)
-	if err != nil {
-		log.Fatal("Error in addForeignKey: ", err)
-	}
-	return err
+	qry := fmt.Sprintf(sql, fk.SchemaSource, fk.TableSource, fkName, fk.ColumnSource, fk.SchemaTarget, fk.TableTarget, fk.ColumnTarget)
+
+	return qry
 }
 
-// Remove foreign keys
-func dropForeignKey(txDst *sql.DB, fk dbForeignKey) error {
+// EOF WIP
+
+func queryDropForeignKey(fk dbForeignKey) string {
 
 	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_%s_fkey", fk.SchemaSource, fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
 
 	sql := "ALTER TABLE %s.%s DROP CONSTRAINT %s"
-	dstQry := fmt.Sprintf(sql, fk.SchemaSource, fk.TableSource, fkName)
-	log.Debug("---- ", dstQry)
-	_, err := txDst.Exec(dstQry)
-	if err != nil {
-		log.Fatal("Error in dropForeignKey: ", err)
-	}
-	return err
-}
+	qry := fmt.Sprintf(sql, fk.SchemaSource, fk.TableSource, fkName)
 
-// EOF WIP
+	return qry
+}
 
 func deleteData(t Table, forcePurge bool, txDst *sql.Tx) error {
 	log.Debug(fmt.Sprintf("DELETE data from %s according to configuration", t.Name))

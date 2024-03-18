@@ -89,7 +89,6 @@ func fillColumn(table Table, col Column, cfvalue string, colValues *[]interface{
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomFloat64":
 		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomFloat64()))
-
 		*colparam = append(*colparam, fmt.Sprintf("$%d", *nbColumnModified))
 	case "randomIntMinMax":
 		*colValues = append(*colValues, setRandom(col.PreserveNull, cols[i], randomIntMinMax(col.Min, col.Max)))
