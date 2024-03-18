@@ -106,23 +106,23 @@ func dropForeignKeys(txDst *sql.DB, fkeys []dbForeignKey) error {
 	var err error
 
 	for _, fk := range fkeys {
-		err = genericDBSQL(txDst, queryAddForeignKey(fk), "Error in dropForeignKey: ")
+		err = genericDBSQL(txDst, queryDropForeignKey(fk), "Error in dropForeignKey: ")
 	}
 	return err
 }
 
-func genericSQL(txDst *sql.Tx, query string, message string) error {
+func genericSQL(tx *sql.Tx, query string, message string) error {
 
-	_, err := txDst.Exec(query)
+	_, err := tx.Exec(query)
 	if err != nil {
 		log.Fatal(message, err)
 	}
 	return err
 }
 
-func genericDBSQL(txDst *sql.DB, query string, message string) error {
+func genericDBSQL(db *sql.DB, query string, message string) error {
 
-	_, err := txDst.Exec(query)
+	_, err := db.Exec(query)
 	if err != nil {
 		log.Fatal(message, err)
 	}
