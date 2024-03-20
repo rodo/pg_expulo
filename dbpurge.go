@@ -111,26 +111,6 @@ func dropForeignKeys(txDst *sql.DB, fkeys []dbForeignKey) error {
 	return err
 }
 
-func genericSQL(tx *sql.Tx, query string, message string) error {
-
-	_, err := tx.Exec(query)
-	if err != nil {
-		log.Fatal(message, err)
-	}
-	return err
-}
-
-func genericDBSQL(db *sql.DB, query string, message string) error {
-
-	_, err := db.Exec(query)
-	if err != nil {
-		log.Fatal(message, err)
-	}
-	return err
-}
-
-// WIP
-
 func queryAddForeignKey(fk dbForeignKey) string {
 
 	fkName := fmt.Sprintf("expulo_%s_%s_%s_%s_%s_fkey", fk.SchemaSource, fk.TableSource, fk.TableTarget, fk.ColumnSource, fk.ColumnTarget)
@@ -216,4 +196,20 @@ func getOrderTableList(tableList []string, txDst *sql.Tx) []string {
 	rows.Close()
 	log.Debug(pkName)
 	return orderedTableList
+}
+
+func genericSQL(tx *sql.Tx, query string, message string) error {
+	_, err := tx.Exec(query)
+	if err != nil {
+		log.Fatal(message, err)
+	}
+	return err
+}
+
+func genericDBSQL(db *sql.DB, query string, message string) error {
+	_, err := db.Exec(query)
+	if err != nil {
+		log.Fatal(message, err)
+	}
+	return err
 }
