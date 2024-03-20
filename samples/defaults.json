@@ -1,0 +1,6 @@
+[
+    {"Name": "fullname", "Generator": "FakeName", "PreserveNull": false},
+    {"Name": "name", "Generator": "FakeName", "PreserveNull": false},
+    {"Name": "firstname", "Generator": "FakeFirstName", "PreserveNull": true},
+    {"Name": "age", "Generator": "randomInt", "PreserveNull": true}
+]

@@ -70,6 +70,7 @@ var (
 	purgeOnly    = false
 	generateConf = false
 	configFile   = "config.json"
+	defaultsFile = ""
 	schema       = ""
 )
 
