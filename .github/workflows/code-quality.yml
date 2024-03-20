@@ -79,12 +79,12 @@ jobs:
               --config="p/default"
 
         - name: save report as pipeline artifact
-          uses: actions/upload-artifact@v3
+          uses: actions/upload-artifact@v4
           with:
             name: report.sarif
             path: report.sarif
 
         - name: Download report
-          uses: actions/download-artifact@v2
+          uses: actions/download-artifact@v4
           with:
             name: report.sarif

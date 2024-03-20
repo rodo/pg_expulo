@@ -84,11 +84,10 @@ func readConfig(filename string) Config {
 	}
 	log.Info("Successfully Opened : ", filename)
 	// defer the closing of our jsonFile so that we can parse it later on
-	defer jsonFile.Close()
 
 	byteValue, err := ioutil.ReadAll(jsonFile)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal("Error when reading config file", err)
 	}
 
 	// we initialize our Config array
@@ -99,7 +98,7 @@ func readConfig(filename string) Config {
 	if err := json.Unmarshal(byteValue, &conf); err != nil {
 		panic(err)
 	}
-
+	jsonFile.Close()
 	return conf
 }
 

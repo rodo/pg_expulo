@@ -13,8 +13,8 @@ import (
 
 // Config store the whole configuration read from json file
 type Config struct {
-	Tables   []Table  `json:"tables"`
-	Defaults []Column `json:"defaults"`
+	Tables   []Table     `json:"tables"`
+	Defaults []defColumn `json:"defaults"`
 }
 
 // Columns contains a collection of Column

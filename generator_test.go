@@ -6,6 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestRandomString(t *testing.T) {
+	value := randomString()
+	assert.IsType(t, "string", value, "Expected result of type int32")
+}
+
 func TestRandomIntMinMax(t *testing.T) {
 	value := randomIntMinMax(10, 20)
 
@@ -52,4 +57,29 @@ func TestRandomFloat32(t *testing.T) {
 func TestRandomFloat64(t *testing.T) {
 	result := randomFloat64()
 	assert.IsType(t, float64(0), result, "Expected result of type float64")
+}
+
+func TestFakeEmail(t *testing.T) {
+	result := genericFake{}.FakeEmail()
+	assert.NotNil(t, result, "Expected non-nil result")
+
+	// Assert that result is of type string
+	assert.IsType(t, "", result, "Expected result of type string")
+}
+
+func TestFakeName(t *testing.T) {
+	result := genericFake{}.FakeName()
+	assert.NotNil(t, result, "Expected non-nil result")
+
+	// Assert that result is of type string
+	assert.IsType(t, "", result, "Expected result of type string")
+}
+
+func TestFakeFirstName(t *testing.T) {
+	result := genericFake{}.FakeFirstName()
+
+	assert.NotNil(t, result, "Expected non-nil result")
+
+	// Assert that result is of type string
+	assert.IsType(t, "", result, "Expected result of type string")
 }

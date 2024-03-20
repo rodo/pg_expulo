@@ -9,6 +9,12 @@ import (
 	"github.com/go-faker/faker/v4"
 )
 
+type genericFake struct{}
+
+func (genericFake) FakeEmail() string     { return faker.Email() }
+func (genericFake) FakeName() string      { return faker.Name() }
+func (genericFake) FakeFirstName() string { return faker.FirstName() }
+
 func mask() string { return "********" }
 
 func randomFloat() float32   { return rand.Float32() }

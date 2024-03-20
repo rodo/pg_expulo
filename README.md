@@ -36,25 +36,25 @@ The two connections strings are build from env variables, you need at least thes
 You can run pg_expulo without any parameter
 
 ```code
-pg_expluo
+pg_expulo
 ```
 
 Use a specific config file
 
 ```code
-pg_expluo --config config/special.json
+pg_expulo --config config/special.json
 ```
 
 Just give a try to your configuration. Data will be read, inserted on target, but **ROLLBACK** at the end
 
 ```code
-pg_expluo --config config/special.json --test
+pg_expulo --config config/special.json --test
 ```
 
 You can only purge your target with
 
 ```code
-pg_expluo --config config/special.json --purge
+pg_expulo --config config/special.json --purge
 ```
 
 
