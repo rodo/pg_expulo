@@ -86,7 +86,7 @@ func purgeTarget(config Config, txDst *sql.Tx, dbDst *sql.DB) {
 					log.Fatal(err)
 				}
 			}
-		default:
+		case "delete":
 			_ = deleteData(t, forcePurge, txDst)
 		}
 	}

@@ -54,3 +54,14 @@ INSERT INTO results (race_id, year) SELECT 1, generate_series(1960, 2014, 1);
 -- we sync only rows with area=North
 -- data for other area exists on target
 INSERT INTO town (name, area) VALUES ('Brest', 'North');
+
+--
+--
+INSERT INTO team (id) VALUES (generate_series(1,10,1));
+UPDATE team SET name = 'Team ' || id;
+
+
+INSERT INTO sponsor (name, team) VALUES ('Sponsor 1',1);
+INSERT INTO sponsor (name, team) VALUES ('Sponsor 2',2);
+INSERT INTO sponsor (name, team) VALUES ('Sponsor 3',3);
+INSERT INTO sponsor (name, team) VALUES ('Sponsor 4',4);

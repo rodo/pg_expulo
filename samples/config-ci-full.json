@@ -43,7 +43,6 @@
              { "name": "id", "generator": "serial" }
          ]
         },
-
         {"name": "skipper",
          "schema": "public",
          "clean": "delete",
@@ -89,6 +88,21 @@
              {
                  "name": "name", "generator": "keep"
              }]
+        },
+        {"name": "team",
+         "schema": "public",
+         "clean": "delete",
+         "filter": "id=2",
+         "deletion_filter": "id=2",
+         "columns": [
+             {
+                 "name": "name", "generator": "keep"
+             }]
+        },
+        {"name": "sponsor",
+         "schema": "public",
+         "comment": "no delete",
+         "filter": "team=2"
         }
     ]
 

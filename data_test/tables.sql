@@ -7,6 +7,8 @@ DROP TABLE IF EXISTS boat;
 DROP TABLE IF EXISTS skipper;
 DROP TABLE IF EXISTS cheater;
 DROP TABLE IF EXISTS architect;
+DROP TABLE IF EXISTS sponsor;
+DROP TABLE IF EXISTS team;
 
 -- no special config for this table
 -- will inherited from default
@@ -47,6 +49,20 @@ CREATE TABLE race (
   year int,
   profile text default 'private',
   rating float default 4.5
+);
+
+
+CREATE TABLE team (
+  id int NOT NULL PRIMARY KEY,
+  created_at timestamp with time zone default now(),
+  name text
+);
+
+CREATE TABLE sponsor (
+  id serial PRIMARY KEY,
+  name text,
+  created_at timestamp with time zone default now(),
+  team int REFERENCES team(id)
 );
 
 /* This table is never empty on destination
