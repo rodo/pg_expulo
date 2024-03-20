@@ -21,6 +21,16 @@ Generate a configuration file based on information fetched from target database.
 pg_expulo -generate -config config.auto.json
 ```
 
+### the defaults option
+
+Use a file to define your own default values for column generator
+
+
+```code
+pg_expulo -generate -defaults samples/defaults.json
+```
+
+
 ### the try option
 
 You may want to test if your config file works or if your action will be successful, the `-try` option is here to do that, all the reads will be done on **source** and write will be done on **target** but with a final **ROLLBACK** at the end to ensure you to not chnage any data. As is you can fine tune your config file in case of needed
